@@ -15,6 +15,47 @@
   const seasonMenu = document.querySelector('.season-menu');
   if (seasonMenu) document.addEventListener('click', e => { if (!seasonMenu.contains(e.target)) seasonMenu.open = false; });
   document.querySelectorAll('[data-year]').forEach(el => el.textContent = new Date().getFullYear());
+  // Featured photos are links to the outreach story, not decorative slides.
+  const gallery = document.querySelector('[data-hero-gallery]');
+  if (gallery) {
+    const slides = [...gallery.querySelectorAll('[data-slide]')];
+    const dots = [...gallery.querySelectorAll('[data-gallery-dot]')];
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let active = 0;
+    let interval;
+    const show = (next) => {
+      active = (next + slides.length) % slides.length;
+      slides.forEach((slide, index) => {
+        const selected = index === active;
+        slide.hidden = !selected;
+        slide.classList.toggle('is-active', selected);
+      });
+      dots.forEach((dot, index) => {
+        const selected = index === active;
+        dot.classList.toggle('is-active', selected);
+        if (selected) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+    };
+    const pause = () => { if (interval) clearInterval(interval); interval = undefined; };
+    const play = () => {
+      pause();
+      if (!prefersReducedMotion.matches && !document.hidden && !gallery.matches(':hover') && !gallery.contains(document.activeElement)) {
+        interval = setInterval(() => show(active + 1), 5500);
+      }
+    };
+    gallery.querySelector('[data-gallery-previous]')?.addEventListener('click', () => { show(active - 1); play(); });
+    gallery.querySelector('[data-gallery-next]')?.addEventListener('click', () => { show(active + 1); play(); });
+    dots.forEach((dot, index) => dot.addEventListener('click', () => { show(index); play(); }));
+    gallery.addEventListener('mouseenter', pause);
+    gallery.addEventListener('mouseleave', play);
+    gallery.addEventListener('focusin', pause);
+    gallery.addEventListener('focusout', () => requestAnimationFrame(play));
+    document.addEventListener('visibilitychange', play);
+    if (prefersReducedMotion.addEventListener) prefersReducedMotion.addEventListener('change', play);
+    show(0);
+    play();
+  }
   const form = document.getElementById('contact-form');
   if (!form) return;
   const feedback = document.getElementById('form-feedback');

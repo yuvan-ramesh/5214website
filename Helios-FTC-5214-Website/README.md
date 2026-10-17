@@ -52,13 +52,24 @@ Every new push to your production branch will automatically redeploy after the G
 
 The form validates fields, has a hidden spam trap, escapes user-submitted HTML, uses a fixed destination inbox, and never includes the API key in public files. If the provider is unconfigured or fails, it shows an error and offers direct email. For high traffic, add a persistent rate limiter and CAPTCHA in the API.
 
+
+## Vercel Web Analytics
+
+Each generated HTML page includes Vercel's lightweight **Web Analytics** loader (`/_vercel/insights/script.js`). No new npm packages or environment variables are needed for this static site.
+
+**Required Vercel dashboard step:** select this project in Vercel → **Analytics** → **Enable**. Enable the feature and redeploy the latest commit to ensure the analytics endpoint is created. Visits should then appear under Analytics; allow time for data to arrive. If you see a 404 for `/_vercel/insights/script.js`, ensure Analytics is enabled and redeploy. Analytics only records page views after activation. This is **Web Analytics**, not Speed Insights.
+
+## School affiliation
+
+Team 5214 is based at **The Quarry Lane School**, Dublin, California. Its official site is https://www.quarrylane.org/ and is linked from the homepage, About, Contact and footer. The affiliation text is team-provided.
+
 ## Customize
 
 - Update team members, copy, and seasons in `build_pages.py`, then run `python3 build_pages.py` to regenerate the HTML pages.
 - Replace photo placeholders by adding photos under `public/assets/`, then swapping each `.member-photo` placeholder in the team-page generator for an `<img>` (with `alt="Bryan Pan"`, etc.). Keep matching crop via `object-fit: cover; width:100%; height:100%`.
 - Edit colors, typography, layout in `public/assets/styles.css` (`:root` CSS variables).
 - Edit browser interactions in `public/assets/main.js` and Vercel email logic in `api/contact.js`.
-- The real Lakeside event photo lives at `public/assets/lakeside-stem-event.webp`; the homepage and outreach page both use it. Replace this asset with a higher-resolution authorized version if available. No invented attendee counts, sponsor logos, or robot specifications are included.
+- Lakeside and IntelliKits are presented as one outreach event, with an anchored story at `/outreach/#lakeside-2026`. The original high-quality images supplied by the team were converted from camera files into web-friendly assets: `lakeside-kit-workshop.webp`, `lakeside-team-demo.webp` and `intellikits-rubber-band-car.webp`. The homepage has a rotating three-photo carousel; clicking any picture goes to that event. To feature future event photos, add new slides and their destination links in `build_pages.py`, then regenerate the pages. The carousel pauses on hover and focus, supports arrows and photo dots, and respects reduced-motion preferences. No invented attendee counts, sponsor logos, or robot specifications are included.
 
 ## Information sources / editorial notes
 

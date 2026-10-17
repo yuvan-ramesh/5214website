@@ -74,3 +74,56 @@
 .instagram-link svg{width:16px}
 @media(max-width:900px){.hero-layout{grid-template-columns:1fr 1fr;gap:5%}.hero-photo img{height:370px}.hero-copy h1{font-size:clamp(42px,5.4vw,62px)}.lakeside-event{grid-template-columns:1fr;gap:24px}.lakeside-copy{max-width:750px}.story-poster{min-height:350px;padding:28px}}
 @media(max-width:680px){.hero{padding:40px 0 58px}.hero-layout{grid-template-columns:1fr;gap:35px}.hero-copy h1{font-size:clamp(44px,11vw,66px)}.hero-photo img{height:auto;aspect-ratio:1.4;object-fit:cover}.hero-note{margin-top:30px}.first-explainer-top,.first-explainer-grid,.intellikits-feature{grid-template-columns:1fr}.first-explainer-top .eyebrow{grid-column:auto}.first-explainer-grid article,.first-explainer-grid article+article{padding:25px 0;border-left:0}.first-explainer-grid article+article{border-top:1px solid #d6ccc0}.first-explainer h2{font-size:38px;margin-bottom:16px}.story-poster{min-height:300px}.story-poster strong{font-size:130px}.lakeside-section .section-row{margin-bottom:25px}}
+
+/* October outreach gallery — event photography is the focus. */
+.hero-gallery{min-width:0;background:#f3ece1;border:1px solid #e4d9ca}
+.hero-gallery-images{position:relative;overflow:hidden;background:#ded8cd;height:510px}
+.hero-gallery-slide{display:block;width:100%;height:100%;cursor:pointer}
+.hero-gallery-slide[hidden]{display:none!important}
+.hero-gallery-slide img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .35s ease}
+.hero-gallery-slide:hover img{transform:scale(1.018)}
+.gallery-image-hint{position:absolute;top:17px;left:17px;z-index:2;background:rgba(40,36,33,.80);padding:8px 11px;color:white;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.06em;pointer-events:none}
+.hero-gallery-buttons{display:flex;gap:7px;position:absolute;bottom:16px;right:16px;z-index:3}
+.gallery-control{background:rgba(251,249,244,.95);border:1px solid #e0d5c6;box-shadow:0 1px 6px #0002;color:#2e2822;width:42px;height:42px;display:grid;place-items:center;font-size:20px;line-height:1;transition:background .15s}
+.gallery-control:hover{background:#fff}
+.hero-gallery-caption{padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px;line-height:1.25}
+.hero-gallery-caption>a{display:grid;gap:8px;flex:1;min-width:0}
+.hero-gallery-caption strong{font-size:13px}
+.hero-gallery-caption span{font-size:12px;color:#746a60}
+.hero-gallery-caption>a:hover strong{text-decoration:underline;text-underline-offset:3px}
+.gallery-dots{display:flex;gap:8px;align-items:center}
+.gallery-dots button{border:0;background:#bfb4a6;padding:0;width:8px;height:8px;border-radius:50%;transition:background .2s}
+.gallery-dots button.is-active{background:#b96145;width:21px;border-radius:7px}
+#lakeside-2026{scroll-margin-top:108px}
+.outreach-event-heading{display:flex;align-items:end;justify-content:space-between;gap:30px;margin-bottom:45px}
+.outreach-event-heading h2{font-size:clamp(40px,5vw,67px);line-height:1.08;letter-spacing:-.065em;font-weight:700;margin:17px 0}
+.outreach-event-heading p{font-size:16px;color:#71695f;max-width:600px}
+.outreach-event-index{font:500 11px 'IBM Plex Mono',monospace;white-space:nowrap;letter-spacing:.08em;color:#a75f42;padding-bottom:4px}
+.lakeside-story{display:grid;grid-template-columns:.84fr 1.16fr;gap:6%;align-items:start}
+.lakeside-story-text{padding-top:0}
+.lakeside-story-text h3{font-size:clamp(26px,2.75vw,37px);line-height:1.22;letter-spacing:-.05em;font-weight:700;margin:0 0 24px}
+.lakeside-story-text p{color:#655e57;font-size:15px;line-height:1.8;margin-bottom:16px}
+.outreach-main-photo{margin:0}
+.outreach-main-photo img{width:100%;height:auto;aspect-ratio:1.37;object-fit:cover;object-position:center}
+.outreach-main-photo figcaption{font-size:12px;color:#7c7066;padding:11px 0}
+.outreach-photo-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:22px;margin:47px 0 0}
+.outreach-photo-grid figure{margin:0;min-width:0}
+.outreach-photo-grid img{display:block;width:100%;height:360px;object-fit:cover}
+.outreach-photo-grid figure:first-child img{object-position:center 43%}
+.outreach-photo-grid figcaption{display:flex;flex-direction:column;gap:5px;padding-top:13px}
+.outreach-photo-grid figcaption strong{font-size:14px;font-weight:700}
+.outreach-photo-grid figcaption span{font-size:12px;color:#796e64}
+.outreach-next{display:flex;justify-content:space-between;align-items:end;gap:40px;margin-top:78px;border-top:1px solid #d6ccc0;padding-top:44px}
+.outreach-next>div{max-width:780px}
+.outreach-next h3{font-size:clamp(28px,3vw,42px);line-height:1.2;letter-spacing:-.05em;margin:15px 0}
+.outreach-next p{font-size:15px;line-height:1.8;color:#665d55}
+.outreach-next .button{flex:none}
+@media(max-width:900px){.hero-gallery-images{height:370px}.lakeside-story{grid-template-columns:1fr;gap:24px}.lakeside-story-text{max-width:760px}.outreach-photo-grid img{height:290px}.outreach-next{align-items:flex-start;flex-direction:column}}
+@media(max-width:680px){.hero-gallery-images{height:auto;aspect-ratio:1.35}.hero-gallery-caption{padding:14px}.gallery-control{width:39px;height:39px}.gallery-image-hint{font-size:9px}.outreach-event-heading{align-items:start;flex-direction:column;gap:10px;margin-bottom:28px}.outreach-event-heading h2{font-size:clamp(39px,10vw,53px)}.lakeside-story-text h3{font-size:30px}.outreach-photo-grid{grid-template-columns:1fr;gap:32px;margin-top:30px}.outreach-photo-grid img{height:auto;aspect-ratio:1.5}.outreach-next{margin-top:52px;padding-top:35px}}
+@media(prefers-reduced-motion:reduce){.hero-gallery-slide img,.gallery-dots button{transition:none}}
+
+/* School affiliation — linked where visitors naturally look for the team's home. */
+.inline-school-link{color:#b55b42;text-underline-offset:3px;text-decoration:underline;text-decoration-thickness:1px;font-weight:650}
+.inline-school-link:hover{color:#8f3926;text-decoration-thickness:2px}
+.footer-school-link{color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.footer-school-link:hover{color:#cb714d}
