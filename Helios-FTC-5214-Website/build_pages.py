@@ -66,10 +66,24 @@ about=f'''<section class="page-hero page-hero--about"><div class="container narr
 <section class="section-block small-cta"><div class="container small-cta-inner"><div>{eyebrow('MEET THE PEOPLE')}<h2>Every great robot takes a team.</h2></div>{link('/team/','Meet Helios','dark')}</div></section>'''
 page('About','Learn about Helios FTC Team 5214, competing in FIRST Tech Challenge since 2010 and active for 16 seasons.', 'about',about,'/about/')
 
-members=[('Bryan Pan','Captain','BP','01'),('Yuvan Ramesh','Software Lead','YR','02'),('Elan Jain','Business Lead','EJ','03'),('Damodar Kriplani','Driver / Media Lead','DK','04')]
-member_cards=''.join(f'''<article class="member-card"><div class="member-photo" aria-label="Photo placeholder for {name}"><span class="photo-corner">{n} / TEAM 5214</span><div class="photo-monogram" aria-hidden="true">{initial}</div><span class="photo-caption">PHOTO COMING SOON</span></div><div class="member-card-bottom"><span class="member-role">{role.upper()}</span><h2>{name}</h2></div></article>''' for name,role,initial,n in members)
-team=f'''<section class="page-hero page-hero--team"><div class="container narrow-content">{eyebrow('THE PEOPLE BEHIND 5214')}<h1>Different strengths.<br><em>One team.</em></h1><p>Meet the people bringing ideas, code, strategy, and energy to Helios.</p></div></section><section class="section-block team-section"><div class="container"><div class="team-topline"><span>OUR 2026–27 TEAM</span><span>04 MEMBERS / HELIOS</span></div><div class="member-grid">{member_cards}</div><div class="team-photo-note"><span class="info-symbol">i</span>Photo spaces are ready—replace each placeholder with a team member’s portrait when available.</div></div></section><section class="section-block team-bottom"><div class="container team-bottom-inner"><div>{eyebrow('MORE THAN ONE ROLE')}<h2>We show up for<br>each other.</h2></div><p>From the driver station to the code editor, everyone has a part in building something that works. Collaboration is what brings the pieces together.</p></div></section>'''
-page('Our Team','Meet Helios Team 5214: Bryan Pan, Yuvan Ramesh, Elan Jain, and Damodar Kriplani.', 'team',team,'/team/')
+team_groups=[["Leadership","Coordinating the team",[["Bryan Pan","Captain","BP"]]],["Hardware & Design","Designing, building, and refining the robot",[["Arhaan Reddy","Hardware Lead","AR"],["Neel Gupta","Design Lead","NG"],["Nyles Han","Hardware Member","NH"],["Jacob Li","Hardware Member","JL"]]],["Software","Programming the robot",[["Yuvan Ramesh","Software Lead","YR"]]],["Business & Media","Outreach, communications, and driving",[["Elan Jain","Business Lead","EJ"],["Damodar Kriplani","Driver / Media Lead","DK"]]]]
+def member_card(name,role,initials,index):
+    return f'''<article class="member-card"><div class="member-photo" role="img" aria-label="Photo coming soon for {name}"><span class="photo-corner">{index:02d} / FTC 5214</span><div class="member-avatar"><span aria-hidden="true">{initials}</span></div><span class="photo-caption">PHOTO COMING SOON</span></div><div class="member-card-bottom"><span class="member-role">{role.upper()}</span><h3>{name}</h3></div></article>'''
+
+def team_divisions():
+    sections=[]
+    index=0
+    for section_index,(division,subtitle,people) in enumerate(team_groups,start=1):
+        cards=[]
+        for name,role,initials in people:
+            index+=1
+            cards.append(member_card(name,role,initials,index))
+        sections.append(f'''<section class="team-division" aria-labelledby="team-division-{section_index}"><div class="division-heading"><div><span class="division-eyebrow">{section_index:02d} / HELIOS 2026–27</span><h2 id="team-division-{section_index}">{division}</h2></div><p>{subtitle}</p></div><div class="member-grid">{''.join(cards)}</div></section>''')
+    return ''.join(sections)
+
+team=f'''<section class="page-hero page-hero--team"><div class="container narrow-content">{eyebrow('THE PEOPLE BEHIND 5214')}<h1>Different strengths.<br><em>One team.</em></h1><p>Meet the eight students behind our hardware, software, outreach, and competition work.</p></div></section><section class="section-block team-section"><div class="container"><div class="team-topline"><span>OUR 2026–27 TEAM</span><span>08 MEMBERS / HELIOS</span></div>{team_divisions()}<div class="team-photo-note"><span class="info-symbol">i</span>Team portraits are coming soon. Each card has a placeholder for now.</div></div></section><section class="section-block team-bottom"><div class="container team-bottom-inner"><div>{eyebrow('ONE TEAM, DIFFERENT ROLES')}<h2>Every part matters.</h2></div><p>Design, fabrication, programming, driving, and outreach each play a role in making a season work. We build better robots when we work together.</p></div></section>'''
+page('Our Team','Meet the 2026–27 Helios FTC 5214 team: leadership, hardware and design, software, business, and media.', 'team',team,'/team/')
+
 
 outreach=f'''<section class="page-hero page-hero--outreach"><div class="container narrow-content">{eyebrow('COMMUNITY OUTREACH')}<h1>Sharing robotics.<br><em>Making it accessible.</em></h1><p>We take what we learn on our FTC team and turn it into opportunities for younger students to try engineering firsthand.</p></div></section>
 <section class="section-block lakeside-section" id="lakeside-2026"><div class="container">

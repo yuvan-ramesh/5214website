@@ -127,3 +127,27 @@
 .inline-school-link:hover{color:#8f3926;text-decoration-thickness:2px}
 .footer-school-link{color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 .footer-school-link:hover{color:#cb714d}
+
+
+/* 2026–27 team divisions: portrait cards in Helios colors */
+.team-section{padding-top:72px}
+.team-section .team-topline{margin-bottom:43px}
+.team-division+.team-division{margin-top:68px}
+.division-heading{display:flex;justify-content:space-between;align-items:end;gap:22px;margin-bottom:23px;border-bottom:1px solid #ddd1c4;padding-bottom:19px}
+.division-eyebrow{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.11em;color:#b45f42}
+.division-heading h2{font-size:clamp(28px,3.3vw,43px);font-weight:700;letter-spacing:-.045em;line-height:1.12;margin:11px 0 0;color:#302b27}
+.division-heading p{font-size:13px;line-height:1.6;color:#7c7065;margin:0 0 5px;max-width:310px;text-align:right}
+.team-division .member-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:19px}
+.team-division .member-card{background:#fffdfa;border:1px solid #e7ddd3;border-radius:12px;padding:20px 12px 25px;text-align:center;box-shadow:0 3px 12px rgba(67,49,32,.035);min-width:0}
+.team-division .member-photo{background:transparent!important;height:166px;aspect-ratio:auto;display:grid;place-items:center;overflow:visible;position:relative}
+.team-division .member-photo:before,.team-division .member-photo:after{content:none}
+.team-division .member-avatar{width:120px;height:120px;display:grid;place-items:center;border-radius:50%;background:#f3e5d6;border:3px solid #c47450;box-shadow:0 0 0 5px #fffdfa,0 0 0 6px #e7d3c1}
+.team-division .member-avatar span{font-size:34px;font-weight:700;letter-spacing:-.065em;color:#ad6249}
+.team-division .photo-corner{top:0;left:5px;right:auto;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#938274}
+.team-division .photo-caption{bottom:1px;left:0;right:0;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#8d7969}
+.team-division .member-card-bottom{padding:17px 0 0}
+.team-division .member-role{font:650 10px 'IBM Plex Mono',monospace;letter-spacing:.055em;color:#b35f43;display:block;line-height:1.5}
+.team-division .member-card h3{font-size:clamp(17px,1.8vw,23px);font-weight:700;letter-spacing:-.035em;line-height:1.22;margin:10px 0 0;overflow-wrap:break-word}
+@media(max-width:980px){.team-division .member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.team-division .member-card h3{font-size:21px}}
+@media(max-width:600px){.team-division+.team-division{margin-top:52px}.team-section .team-topline{margin-bottom:34px}.division-heading{align-items:start;flex-direction:column;gap:7px}.division-heading p{text-align:left;font-size:12px}.team-division .member-grid{gap:12px}.team-division .member-card{padding:14px 9px 18px}.team-division .member-photo{height:140px}.team-division .member-avatar{width:96px;height:96px}.team-division .member-avatar span{font-size:27px}.team-division .member-card-bottom{padding-top:13px}.team-division .member-card h3{font-size:17px}.team-division .member-role{font-size:9px}.team-division .photo-corner{font-size:8px}.team-division .photo-caption{font-size:8px}.team-photo-note{line-height:1.5}}
+@media(max-width:350px){.team-division .member-avatar{width:79px;height:79px}.team-division .member-card h3{font-size:16px}}
