@@ -152,3 +152,8 @@
 @media(max-width:980px){.team-division .member-grid>.member-card{flex-basis:calc((100% - 19px)/2)}.team-division .member-card h3{font-size:21px}}
 @media(max-width:600px){.team-division+.team-division{margin-top:52px}.team-section .team-topline{margin-bottom:34px}.division-heading{align-items:start;flex-direction:column;gap:7px}.division-heading p{text-align:left;font-size:12px}.team-division .member-grid{gap:12px}.team-division .member-grid>.member-card{flex-basis:calc((100% - 12px)/2)}.team-division .member-card{padding:14px 9px 18px}.team-division .member-photo{height:140px}.team-division .member-avatar{width:96px;height:96px}.team-division .member-avatar span{font-size:27px}.team-division .member-card-bottom{padding-top:13px}.team-division .member-card h3{font-size:17px}.team-division .member-role{font-size:9px}.team-division .photo-corner{font-size:8px}.team-division .photo-caption{font-size:8px}.team-photo-note{line-height:1.5}}
 @media(max-width:350px){.team-division .member-avatar{width:79px;height:79px}.team-division .member-card h3{font-size:16px}}
+
+/* Lakeside photo refresh: two-column outreach gallery and uncropped portrait carousel photos. */
+.outreach-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hero-gallery-slide img[src*="lakeside-intellikits-demo"],.hero-gallery-slide img[src*="lakeside-kit-parts"]{object-fit:contain;background:#e5ddd1}
+@media(max-width:680px){.outreach-photo-grid{grid-template-columns:1fr}}
