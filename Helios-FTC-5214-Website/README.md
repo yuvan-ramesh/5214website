@@ -7,8 +7,8 @@ An original, responsive, multi-page team website designed for GitHub + Vercel. T
 - `/` — Home
 - `/about/` — About, 16-season history and values
 - `/team/` — Bryan Pan, Yuvan Ramesh, Elan Jain, and Damodar Kriplani; portrait placeholders
-- `/outreach/` — IntelliKits and community outreach
-- `/contact/` — Working email form (after the serverless email integration is configured)
+- `/outreach/` — October 16, 2026 Lakeside Apartments STEM event (photo and details) plus IntelliKits
+- `/contact/` — Instagram @ftc5214helios, direct email and email form (after serverless delivery is configured)
 - `/seasons/` — Season landing page and earlier FIRST records
 - `/seasons/biobuzz/` — 2026–27 BIOBUZZ
 - `/seasons/decode/` — 2025–26 DECODE (verified award and event history)
@@ -58,7 +58,7 @@ The form validates fields, has a hidden spam trap, escapes user-submitted HTML, 
 - Replace photo placeholders by adding photos under `public/assets/`, then swapping each `.member-photo` placeholder in the team-page generator for an `<img>` (with `alt="Bryan Pan"`, etc.). Keep matching crop via `object-fit: cover; width:100%; height:100%`.
 - Edit colors, typography, layout in `public/assets/styles.css` (`:root` CSS variables).
 - Edit browser interactions in `public/assets/main.js` and Vercel email logic in `api/contact.js`.
-- Future outreach/robot photography can be inserted into the prepared visual areas. No invented community reach totals, sponsor logos, or robot specifications are included.
+- The real Lakeside event photo lives at `public/assets/lakeside-stem-event.webp`; the homepage and outreach page both use it. Replace this asset with a higher-resolution authorized version if available. No invented attendee counts, sponsor logos, or robot specifications are included.
 
 ## Information sources / editorial notes
 
@@ -67,6 +67,6 @@ The form validates fields, has a hidden spam trap, escapes user-submitted HTML, 
 - CENTERSTAGE Motivate Award: https://ftc-events.firstinspires.org/2023/team/5214
 - Season names: https://ftc-events.firstinspires.org/seasons
 
-The official historic FTC record sometimes lists **B.R.O.** as Team 5214's earlier name; the site uses the currently provided Helios name and links to historical FIRST data. BIOBUZZ results are intentionally left as in-progress rather than invented. IntelliKits is based on team-provided context; review the outreach wording before publishing.
+The official historic FTC record sometimes lists **B.R.O.** as Team 5214's earlier name; the site uses the currently provided Helios name and links to historical FIRST data. BIOBUZZ results are intentionally left as in-progress rather than invented. Lakeside event details and the photo were provided by the team on October 16, 2026. IntelliKits is based on team-provided context.
 
 This site is an independent team website and is not an official FIRST® website. The FIRST® mark and season names belong to their respective owners.
