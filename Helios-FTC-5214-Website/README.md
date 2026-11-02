@@ -10,7 +10,8 @@ An original, responsive, multi-page team website designed for GitHub + Vercel. T
 - `/outreach/` — October 16, 2026 Lakeside Apartments STEM event (photo and details) plus IntelliKits
 - `/contact/` — Instagram @ftc5214helios, direct email and email form (after serverless delivery is configured)
 - `/seasons/` — Season landing page and earlier FIRST records
-- `/seasons/biobuzz/` — 2026–27 BIOBUZZ
+- `/seasons/biobuzz/` — 2026–27 BIOBUZZ with East Bay League Meet One event card
+- `/seasons/biobuzz/east-bay-meet-one/` — November 1, 2026 event recap with nine photos and score highlights
 - `/seasons/decode/` — 2025–26 DECODE (verified award and event history)
 
 ## Preview locally
@@ -81,3 +82,9 @@ Team 5214 is based at **The Quarry Lane School**, Dublin, California. Its offici
 The official historic FTC record sometimes lists **B.R.O.** as Team 5214's earlier name; the site uses the currently provided Helios name and links to historical FIRST data. BIOBUZZ results are intentionally left as in-progress rather than invented. Lakeside event details and the photo were provided by the team on October 16, 2026. IntelliKits is based on team-provided context.
 
 This site is an independent team website and is not an official FIRST® website. The FIRST® mark and season names belong to their respective owners.
+
+## BIOBUZZ East Bay League Meet One photo update (Nov 1, 2026)
+
+Uploaded nine user-supplied images as WebP in `public/assets/meet1-*.webp` (original framing preserved, no crop or stretch). BIOBUZZ season has a clickable event card with the group photo, linking to `/seasons/biobuzz/east-bay-meet-one/` with the full nine-photo gallery and match highlights. Team hero shows that same group photo.
+
+The homepage carousel order is: 1. `meet1-team-robot`, 2. `meet1-score-118`, 3. `meet1-robot-workbench`, 4. `meet1-teammates-strategy`, then the previous first three Lakeside photos: `lakeside-team-workshop`, `lakeside-team-presentation`, and `lakeside-programming-group`. Each slide links to its corresponding event; the caption updates with the slide. Preserve aspect ratio using `object-fit:contain`. Event score photos are team-provided; official event source: https://ftc-events.firstinspires.org/2026/USCANOEBM1.

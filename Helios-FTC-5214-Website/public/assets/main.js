@@ -30,6 +30,14 @@
         slide.hidden = !selected;
         slide.classList.toggle('is-active', selected);
       });
+      const captionLink = gallery.querySelector('[data-gallery-caption-link]');
+      const captionTitle = gallery.querySelector('[data-gallery-caption-title]');
+      const captionSubtitle = gallery.querySelector('[data-gallery-caption-subtitle]');
+      if (slides[active] && captionLink) {
+        captionLink.href = slides[active].getAttribute('href');
+        if (captionTitle) captionTitle.textContent = slides[active].dataset.title || '';
+        if (captionSubtitle) captionSubtitle.textContent = slides[active].dataset.subtitle || '';
+      }
       dots.forEach((dot, index) => {
         const selected = index === active;
         dot.classList.toggle('is-active', selected);

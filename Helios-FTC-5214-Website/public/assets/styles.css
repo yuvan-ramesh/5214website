@@ -165,3 +165,43 @@
 .outreach-photo-grid img{width:100%;height:360px;object-fit:contain;object-position:center;background:#eee7dc}
 .outreach-photo-grid figure:first-child img{object-position:center}
 @media(max-width:680px){.outreach-photo-grid img{height:280px;aspect-ratio:auto;object-fit:contain}}
+
+
+/* 2026 BIOBUZZ meet journal — all images keep their full original aspect ratios. */
+.team-hero-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:5%;align-items:center;padding-block:56px}
+.page-hero--team .team-hero-copy h1{font-size:clamp(45px,5vw,78px);letter-spacing:-.06em;line-height:1.08;margin:20px 0}
+.page-hero--team .team-hero-copy p{color:#75685e;max-width:530px;font-size:16px;line-height:1.8}
+.team-hero-photo{margin:0;min-width:0}
+.team-hero-photo img{display:block;max-width:100%;width:100%;height:auto;object-fit:contain;border:1px solid #e4d7c8}
+.biobuzz-events{background:#f8f1e7;padding-top:90px;padding-bottom:100px}
+.meet-event-card{display:grid;grid-template-columns:1.12fr .88fr;align-items:stretch;background:#fffcf8;border:1px solid #e5d6c5;overflow:hidden;transition:box-shadow .2s ease}
+.meet-event-card:hover{box-shadow:0 15px 35px rgba(47,33,16,.09)}
+.meet-event-media{display:flex;align-items:center;justify-content:center;background:#e7dfd5;min-width:0}
+.meet-event-media img{display:block;width:100%;height:auto;object-fit:contain}
+.meet-event-copy{padding:clamp(24px,4.5vw,60px);display:flex;flex-direction:column;justify-content:center;gap:20px}
+.meet-event-copy h3{font-size:clamp(30px,3.5vw,47px);line-height:1.1;letter-spacing:-.055em;margin:0}
+.meet-event-copy p{font-size:16px;line-height:1.85;color:#695e54}
+.meet-event-cta{font-weight:700;font-size:13px;padding-top:16px;color:#a95636}
+.meet-detail-hero{padding-block:64px 70px;background:#f3e5d3;min-height:0}
+.meet-detail-heading{max-width:860px;padding-top:42px}
+.meet-detail-heading h1{font-size:clamp(53px,7vw,98px);line-height:1.02;letter-spacing:-.065em;margin:20px 0}
+.meet-detail-heading h1 em,.meet-gallery-heading h2 em{font-family:var(--serif);font-weight:400;color:var(--orange)}
+.meet-detail-heading p{font-size:18px;line-height:1.8;max-width:760px;color:#554940}
+.meet-intro-section{padding-bottom:80px}
+.meet-intro{display:grid;grid-template-columns:.9fr 1.1fr;gap:10%}
+.meet-intro h2,.meet-gallery-heading h2{font-size:clamp(35px,4.5vw,65px);line-height:1.08;letter-spacing:-.06em;margin:15px 0}
+.meet-intro .readable p+p{margin-top:18px}
+.meet-intro .source-link{display:inline-block;margin-top:30px}
+.meet-gallery-section{background:#f5f0e8;padding-top:85px}
+.meet-gallery-heading{max-width:700px;margin-bottom:42px}
+.meet-gallery-heading p{font-size:15px;line-height:1.8;color:#746a60}
+.meet-gallery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:34px 25px}
+.meet-gallery-item{min-width:0;margin:0;background:#fffcf8;border:1px solid #e9ded2}
+.meet-gallery-item a{display:block;background:#e8e0d5}
+.meet-gallery-item img{display:block;width:100%;height:auto;max-width:100%;object-fit:contain}
+.meet-gallery-item figcaption{display:flex;flex-direction:column;gap:5px;padding:15px 18px 19px}
+.meet-gallery-item figcaption strong{font-size:14px;line-height:1.45}
+.meet-gallery-item figcaption span{font-size:12px;line-height:1.6;color:#756b61}
+.hero-gallery-slide img{object-fit:contain!important;object-position:center!important;transform:none!important}
+@media(max-width:900px){.team-hero-layout{grid-template-columns:1fr;gap:28px;padding-block:54px}.team-hero-photo{max-width:760px}.meet-event-card{grid-template-columns:1fr}.meet-intro{grid-template-columns:1fr;gap:26px}}
+@media(max-width:600px){.team-hero-layout{padding-block:46px}.page-hero--team .team-hero-copy h1{font-size:clamp(43px,10vw,62px)}.meet-gallery-grid{grid-template-columns:1fr;gap:22px}.biobuzz-events{padding-block:67px}.meet-detail-hero{padding-block:42px 65px}.meet-detail-heading p{font-size:16px}}
