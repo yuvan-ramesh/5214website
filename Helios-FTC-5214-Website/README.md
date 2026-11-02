@@ -1,46 +1,70 @@
-# HELIOS. — FTC Team 5214 website
+# Helios, FTC Team 5214 website
 
-An original, responsive, multi-page team website designed for GitHub + Vercel. The site is intentionally built with plain HTML, CSS, and JavaScript: **no frontend framework, build step, or npm dependencies** are needed.
+A multi-page team website for GitHub + Vercel, built with plain HTML, CSS and JavaScript. There is **no framework and no build step on Vercel**. Pages are generated locally by `build_pages.py` and the output in `public/` is committed.
 
 ## Pages
 
-- `/` — Home
-- `/about/` — About, 16-season history and values
-- `/team/` — Bryan Pan, Yuvan Ramesh, Elan Jain, and Damodar Kriplani; portrait placeholders
-- `/outreach/` — October 16, 2026 Lakeside Apartments STEM event (photo and details) plus IntelliKits
-- `/contact/` — Instagram @ftc5214helios, direct email and email form (after serverless delivery is configured)
-- `/seasons/` — Season landing page and earlier FIRST records
-- `/seasons/biobuzz/` — 2026–27 BIOBUZZ with East Bay League Meet One event card
-- `/seasons/biobuzz/east-bay-meet-one/` — November 1, 2026 event recap with nine photos and score highlights
-- `/seasons/decode/` — 2025–26 DECODE (verified award and event history)
+- `/` Home: robot hero with the CAD X-ray effect, scroll-scrubbed robot turntable, Meet One photo track, seasons, team, outreach
+- `/about/` About, timeline and how the team is organized
+- `/team/` 2026–27 team by group, with portrait placeholders
+- `/outreach/` October 16, 2026 IntelliKits event at Lakeside Apartments in Concord
+- `/contact/` Email, Instagram and the contact form
+- `/seasons/` This season, last season, and links to official FIRST results for earlier seasons
+- `/seasons/biobuzz/` 2026–27 BIOBUZZ with the Eclipse robot viewer and events
+- `/seasons/biobuzz/east-bay-meet-one/` November 1, 2026 recap with scores and nine photos
+- `/seasons/decode/` 2025–26 DECODE record, events and Innovate Award
 
 ## Preview locally
-
-From this folder, run:
 
 ```bash
 cd public
 python3 -m http.server 8000
 ```
 
-Open `http://localhost:8000`. Other routes such as `/team/` also work. The contact form **will not send email on the local static server**; the `/api/contact` endpoint only runs on Vercel (or with the Vercel CLI).
+Open `http://localhost:8000`. The contact form **will not send email on the local static server**; `/api/contact` only runs on Vercel (or with the Vercel CLI).
+
+## Edit the site
+
+- Copy, team members, seasons and page layout: `build_pages.py`, then run `python3 build_pages.py` to regenerate every page in `public/`.
+- Styles: `public/assets/styles.css`. Colors and fonts are CSS variables in `:root`.
+- Behavior and animations: `public/assets/main.js`.
+- Contact email delivery: `api/contact.js`.
+- Team portraits: add photos under `public/assets/`, then replace the initials in `member_card()` in `build_pages.py` with an `<img>` (use `alt="Bryan Pan"` etc.).
+
+## Design
+
+- **Logo**: `public/assets/logo/helios-logo.svg` is a vector trace of the team logo. The wordmark uses `currentColor`, so it turns light on dark backgrounds. `helios-logo-black.svg` is the fixed-color version, `helios-mark.svg` is the sun alone, and `favicon.svg` is the browser icon.
+- **Colors** come from the logo: sun orange `#F6A32C`, flare red `#E0441F`, core cream `#FDE9BD`, plus paper `#F2F0EB` and night `#121010` for light and dark sections.
+- **Type**: Mona Sans (variable weight and width) for everything, with Gloock for a few serif accents. Both are self-hosted in `public/assets/fonts/` under the SIL Open Font License.
+- **Smooth scrolling**: Lenis 1.3.27 (MIT), vendored at `public/assets/vendor/lenis.min.js`. It only runs on mouse and trackpad devices.
+- **Motion**: first-visit loader, page transition curtain, headings that rise in, the robot X-ray lens in the hero, a scroll-scrubbed 360° turntable that switches to the CAD, marquee text that reacts to scroll speed, a sideways-scrolling photo track, image reveals, count-up numbers, and hover effects on buttons, cards and links.
+- **Accessibility**: when a visitor has reduced motion turned on, the loader, transitions, smooth scrolling, pinned scroll scenes and auto-moving effects are switched off and everything is shown in place. Every image has alt text, the menu and photo viewer trap focus and close with Escape, and the site works without JavaScript (content is all in the HTML).
+
+## Robot renders
+
+`public/assets/robot/` holds images rendered from our Onshape CAD (Assembly 1 in the FTC 5214 document):
+
+- `hero-render.webp`: the robot render (transparent background)
+- `hero-cad.webp`: the CAD skeleton from the same camera, shown inside the X-ray lens
+- `hero-cad-light.webp`: a line drawing of the CAD, shown when someone presses "Show the CAD"
+- `spin/` and `spin-sm/`: 48 frames each of the render and the CAD for the home page turntable (`spin-sm` is used on phones)
+
+The tools that made them are in `tools/robot-render/`. To re-render after the robot changes, export the assembly from Onshape as glTF and follow `tools/robot-render/README.md`.
 
 ## Deploy with GitHub + Vercel
 
-1. Create a GitHub repository, e.g. `helios-5214-website`.
-2. Upload the **contents of this folder**, including `public/`, `api/`, and `vercel.json`, to the repository root. Do not upload only the `public` folder.
-3. In [Vercel](https://vercel.com), select **Add New → Project → Import Git Repository** and select that repo.
-4. Vercel should detect `Other` (no framework). `vercel.json` sets the output directory to `public`; no build command is required.
-5. Deploy. Visit the Vercel-generated `.vercel.app` URL and confirm `/about/`, `/team/`, `/seasons/`, and `/contact/` work.
-6. Optional: In Vercel → Project → Settings → Domains, connect a custom domain by following Vercel's DNS instructions. The same repo still works.
+1. Import the repository in [Vercel](https://vercel.com) with **Add New → Project → Import Git Repository**.
+2. Vercel should detect `Other` (no framework). `vercel.json` sets the output directory to `public`; no build command is needed.
+3. Deploy, then check that `/about/`, `/team/`, `/seasons/` and `/contact/` load.
+4. Optional: connect a custom domain in Vercel → Project → Settings → Domains.
 
-Every new push to your production branch will automatically redeploy after the GitHub integration is connected.
+Every push to the production branch redeploys automatically once GitHub is connected.
 
 ## Make the contact form deliver email
 
-**The contact form has a real serverless API; it intentionally does not claim to send anything before you configure an email provider.** The API securely receives messages on Vercel and sends them to **5214.helios@gmail.com** through [Resend](https://resend.com). This avoids exposing credentials to the public browser.
+The contact form posts to a serverless function that sends messages to **5214.helios@gmail.com** through [Resend](https://resend.com). It does not pretend to send anything before an email provider is set up.
 
-1. Sign up for Resend, preferably using `5214.helios@gmail.com`. Create an API key with sending permission.
+1. Sign up for Resend, preferably with `5214.helios@gmail.com`, and create an API key with sending permission.
 2. In Vercel → Project → Settings → Environment Variables, add:
 
    ```
@@ -48,43 +72,27 @@ Every new push to your production branch will automatically redeploy after the G
    RESEND_FROM=Helios Website <hello@your-verified-domain.com>
    ```
 
-3. Verify the sender domain in Resend before using its address. If you do not have a domain, Resend's `onboarding@resend.dev` sender may be used for testing **only to the email verified on your Resend account** (not unrestricted public sending). Use `RESEND_FROM=Helios Website <onboarding@resend.dev>` for such a restricted test.
-4. Redeploy in Vercel (new environment variables need a deployment). Open `/contact/` and submit a real test message. Confirm it arrives at `5214.helios@gmail.com` and that Reply goes to the message sender.
+3. Verify the sender domain in Resend. Without a domain, `RESEND_FROM=Helios Website <onboarding@resend.dev>` works for testing, but only to the email on your Resend account.
+4. Redeploy (new environment variables need a deployment), send a test message from `/contact/`, and confirm it arrives and that Reply goes to the sender.
 
-The form validates fields, has a hidden spam trap, escapes user-submitted HTML, uses a fixed destination inbox, and never includes the API key in public files. If the provider is unconfigured or fails, it shows an error and offers direct email. For high traffic, add a persistent rate limiter and CAPTCHA in the API.
-
+The form validates fields, has a hidden spam trap, escapes user-submitted HTML, uses a fixed destination inbox and never exposes the API key. If sending fails it shows an error and the email address. For high traffic, add a persistent rate limiter and a CAPTCHA to the API.
 
 ## Vercel Web Analytics
 
-Each generated HTML page includes Vercel's lightweight **Web Analytics** loader (`/_vercel/insights/script.js`). No new npm packages or environment variables are needed for this static site.
-
-**Required Vercel dashboard step:** select this project in Vercel → **Analytics** → **Enable**. Enable the feature and redeploy the latest commit to ensure the analytics endpoint is created. Visits should then appear under Analytics; allow time for data to arrive. If you see a 404 for `/_vercel/insights/script.js`, ensure Analytics is enabled and redeploy. Analytics only records page views after activation. This is **Web Analytics**, not Speed Insights.
+Each page loads Vercel's Web Analytics script (`/_vercel/insights/script.js`). Turn it on in Vercel → Project → **Analytics** → **Enable**, then redeploy. A 404 for that script means Analytics isn't enabled yet.
 
 ## School affiliation
 
-Team 5214 is based at **The Quarry Lane School**, Dublin, California. Its official site is https://www.quarrylane.org/ and is linked from the homepage, About, Contact and footer. The affiliation text is team-provided.
+Team 5214 is based at **The Quarry Lane School**, Dublin, California (https://www.quarrylane.org/). The school is linked from the home page, About, Contact and the footer.
 
-## Customize
+## Information sources
 
-- Update team members, copy, and seasons in `build_pages.py`, then run `python3 build_pages.py` to regenerate the HTML pages.
-- Replace photo placeholders by adding photos under `public/assets/`, then swapping each `.member-photo` placeholder in the team-page generator for an `<img>` (with `alt="Bryan Pan"`, etc.). Keep matching crop via `object-fit: cover; width:100%; height:100%`.
-- Edit colors, typography, layout in `public/assets/styles.css` (`:root` CSS variables).
-- Edit browser interactions in `public/assets/main.js` and Vercel email logic in `api/contact.js`.
-- Lakeside and IntelliKits are presented as one outreach event, with an anchored story at `/outreach/#lakeside-2026`. The supplied Nikon camera photos were converted into optimized, privacy-reviewed WebP crops: `lakeside-team-workshop.webp`, `lakeside-team-presentation.webp`, `lakeside-programming-group.webp` (a team-provided crop), `lakeside-intellikits-demo.webp`, and `lakeside-kit-parts.webp`; the existing `intellikits-rubber-band-car.webp` is retained. The earlier photos featuring children have been removed from the public site. The homepage has a rotating six-photo carousel; clicking any picture goes to that event. To feature future event photos, add new slides and their destination links in `build_pages.py`, then regenerate the pages. The carousel pauses on hover and focus, supports arrows and photo dots, and respects reduced-motion preferences. No invented attendee counts, sponsor logos, or robot specifications are included.
-
-## Information sources / editorial notes
-
-- Team profile / rookie year / home location / seasons: https://ftc-events.firstinspires.org/team/5214
-- DECODE results, 11–7 official match record, four official events, Innovate Award: https://ftc-events.firstinspires.org/2025/team/5214
+- Team profile, rookie year, location and seasons: https://ftc-events.firstinspires.org/team/5214
+- DECODE results, 11–7 official record, four official events, Innovate Award: https://ftc-events.firstinspires.org/2025/team/5214
 - CENTERSTAGE Motivate Award: https://ftc-events.firstinspires.org/2023/team/5214
+- Meet One results: https://ftc-events.firstinspires.org/2026/USCANOEBM1
 - Season names: https://ftc-events.firstinspires.org/seasons
 
-The official historic FTC record sometimes lists **B.R.O.** as Team 5214's earlier name; the site uses the currently provided Helios name and links to historical FIRST data. BIOBUZZ results are intentionally left as in-progress rather than invented. Lakeside event details and the photo were provided by the team on October 16, 2026. IntelliKits is based on team-provided context.
+The official FTC record sometimes lists **B.R.O.** as Team 5214's earlier name; the site uses the Helios name and links to the historical FIRST data. Lakeside event details and photos were provided by the team. Photos of children are not used on the public site, and `photo-archive/` (outside `public/`) is not served.
 
-This site is an independent team website and is not an official FIRST® website. The FIRST® mark and season names belong to their respective owners.
-
-## BIOBUZZ East Bay League Meet One photo update (Nov 1, 2026)
-
-Uploaded nine user-supplied images as WebP in `public/assets/meet1-*.webp` (original framing preserved, no crop or stretch). BIOBUZZ season has a clickable event card with the group photo, linking to `/seasons/biobuzz/east-bay-meet-one/` with the full nine-photo gallery and match highlights. Team hero shows that same group photo.
-
-The homepage carousel order is: 1. `meet1-team-robot`, 2. `meet1-score-118`, 3. `meet1-robot-workbench`, 4. `meet1-teammates-strategy`, then the previous first three Lakeside photos: `lakeside-team-workshop`, `lakeside-team-presentation`, and `lakeside-programming-group`. Each slide links to its corresponding event; the caption updates with the slide. Preserve aspect ratio using `object-fit:contain`. Event score photos are team-provided; official event source: https://ftc-events.firstinspires.org/2026/USCANOEBM1.
+This is an independent student team website, not an official FIRST® website. The FIRST® mark and season names belong to their owners.

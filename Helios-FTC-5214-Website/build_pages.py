@@ -1,122 +1,502 @@
+"""Generate every page of the Helios FTC 5214 website into ./public.
+
+Edit content here, then run:  python3 build_pages.py
+Styles: public/assets/styles.css   Behaviour: public/assets/main.js
+Robot renders: public/assets/robot/ (made from our Onshape CAD, see README)
+"""
 from pathlib import Path
 from html import escape
-P=Path(__file__).parent/'public'
-TEAM_SOURCE='https://ftc-events.firstinspires.org/team/5214'
-SCHOOL_URL='https://www.quarrylane.org/'
-seasons=[('2026–27','BIOBUZZ','/seasons/biobuzz/'),('2025–26','DECODE','/seasons/decode/'),('2024–25','INTO THE DEEP','https://ftc-events.firstinspires.org/2024/team/5214'),('2023–24','CENTERSTAGE','https://ftc-events.firstinspires.org/2023/team/5214'),('2022–23','POWERPLAY','https://ftc-events.firstinspires.org/2022/team/5214'),('2021–22','FREIGHT FRENZY','https://ftc-events.firstinspires.org/2021/team/5214'),('2020–21','ULTIMATE GOAL','https://ftc-events.firstinspires.org/2020/team/5214'),('2019–20','SKYSTONE','https://ftc-events.firstinspires.org/2019/team/5214')]
-arrow='<svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 9h11m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-arrow_diag='<svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 13.5 13.5 4.5M5.5 4.5h8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-logo='''<svg class="sunmark" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="14.5" fill="#E9A64A"/><circle cx="32" cy="32" r="7" fill="#F8E3B6"/><path d="M32 4v8M32 52v8M4 32h8M52 32h8M12.2 12.2l5.7 5.7m28.2 28.2 5.7 5.7m0-39.6-5.7 5.7M17.9 46.1l-5.7 5.7" stroke="#C85C3F" stroke-width="4" stroke-linecap="round"/></svg>'''
+import re
 
-def link(path,label,kind='light',target=False):
-    return f'<a class="button button--{kind}" href="{path}" {"target=\"_blank\" rel=\"noopener noreferrer\"" if target else ""}>{label}<span class="button-arrow">{arrow}</span></a>'
+P = Path(__file__).parent / 'public'
+A = P / 'assets'
+TEAM_SOURCE = 'https://ftc-events.firstinspires.org/team/5214'
+SCHOOL_URL = 'https://www.quarrylane.org/'
+INSTAGRAM = 'https://www.instagram.com/ftc5214helios/'
+EMAIL = '5214.helios@gmail.com'
+MEET1 = '/seasons/biobuzz/east-bay-meet-one/'
+EXT = ' target="_blank" rel="noopener noreferrer"'
 
-def header(active):
-    navs=[('Home','/','home'),('About','/about/','about'),('Our team','/team/','team'),('Outreach','/outreach/','outreach')]
-    links=''.join(f'<a class="nav-link {"is-active" if active==key else ""}" href="{url}" {"aria-current=\"page\"" if active==key else ""}>{title}</a>' for title,url,key in navs)
-    season_links=''.join(f'<a href="{url}" {"target=\"_blank\" rel=\"noopener noreferrer\"" if url.startswith("http") else ""}><span>{year}</span><strong>{name}</strong></a>' for year,name,url in seasons)
-    return f'''<header class="site-header" id="site-header"><div class="header-shell container">
-      <a href="/" class="brand" aria-label="Helios team 5214, home">{logo}<span class="brand-copy"><strong>HELIOS<span class="brand-period">.</span></strong><small>FTC TEAM 5214</small></span></a>
-      <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"><span></span><span></span><span></span></button>
-      <nav class="main-nav" id="primary-nav" aria-label="Main navigation">{links}
-        <details class="season-menu"><summary class="nav-link {"is-active" if active=='seasons' else ''}">Seasons <svg viewBox="0 0 12 12" width="13" height="13" aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="season-dropdown"><div class="dropdown-heading">SEASONS PLAYED</div>{season_links}<a class="view-all" href="/seasons/">View all seasons {arrow}</a></div></details>
-        <a class="nav-contact {"is-active" if active=='contact' else ''}" href="/contact/">Contact {arrow_diag}</a>
-      </nav></div></header>'''
+# Robot renders. Front = rendered robot, back = CAD skeleton (same camera, same size).
+ROBOT = {
+    'w': 1600, 'h': 1000,
+    'render': '/assets/robot/hero-render.webp',
+    'cad': '/assets/robot/hero-cad.webp',            # dark X-ray version, shown inside the lens
+    'cad_light': '/assets/robot/hero-cad-light.webp', # line drawing on transparent, shown by the hero toggle
+    'spin_frames': 48,
+    'spin': '/assets/robot/spin/{kind}-{i}.webp',        # kind = render | cad, i = 000..047
+    'spin_small': '/assets/robot/spin-sm/{kind}-{i}.webp',
+}
 
-def footer():
-    return f'''<footer class="site-footer"><div class="container footer-top"><div><a href="/" class="footer-brand">{logo}<span>HELIOS<span class="brand-period">.</span></span></a><p>Ideas in motion. Since 2010.<br>FIRST Tech Challenge · Team 5214<br>Based at <a class="footer-school-link" href="{SCHOOL_URL}" target="_blank" rel="noopener noreferrer">The Quarry Lane School ↗</a>, Dublin, CA</p></div><div class="footer-links"><div><span class="footer-label">EXPLORE</span><a href="/about/">About</a><a href="/team/">Our team</a><a href="/outreach/">Outreach</a><a href="/seasons/">Seasons</a></div><div><span class="footer-label">CONNECT</span><a href="/contact/">Contact us</a><a href="mailto:5214.helios@gmail.com">Email the team</a><a href="{TEAM_SOURCE}" target="_blank" rel="noopener noreferrer">Official FIRST profile {arrow_diag}</a></div></div></div><div class="container footer-bottom"><span>© <span data-year>2026</span> Helios · FTC Team 5214</span><span>Made with purpose in Dublin, California.</span></div></footer>'''
+seasons = [
+    ('2026–27', 'BIOBUZZ', '/seasons/biobuzz/'),
+    ('2025–26', 'DECODE', '/seasons/decode/'),
+    ('2024–25', 'INTO THE DEEP', 'https://ftc-events.firstinspires.org/2024/team/5214'),
+    ('2023–24', 'CENTERSTAGE', 'https://ftc-events.firstinspires.org/2023/team/5214'),
+    ('2022–23', 'POWERPLAY', 'https://ftc-events.firstinspires.org/2022/team/5214'),
+    ('2021–22', 'FREIGHT FRENZY', 'https://ftc-events.firstinspires.org/2021/team/5214'),
+    ('2020–21', 'ULTIMATE GOAL', 'https://ftc-events.firstinspires.org/2020/team/5214'),
+    ('2019–20', 'SKYSTONE', 'https://ftc-events.firstinspires.org/2019/team/5214'),
+]
 
-def page(title,desc,active,content,path='/'):
-    html=f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#F9F7F2"><meta name="description" content="{escape(desc,quote=True)}"><meta property="og:type" content="website"><meta property="og:title" content="{escape(title,quote=True)} | Helios · FTC 5214"><meta property="og:description" content="{escape(desc,quote=True)}"><meta property="og:image" content="/assets/social-card.svg"><title>{escape(title)} | Helios · FTC 5214</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700;750;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/styles.css"><script src="/assets/main.js" defer></script><!-- Vercel Web Analytics: activate from the Vercel project Analytics tab. --><script>window.va = window.va || function () {{ (window.vaq = window.vaq || []).push(arguments); }};</script><script defer src="/_vercel/insights/script.js"></script></head><body><a class="skip-link" href="#main">Skip to content</a>{header(active)}<main id="main">{content}</main>{footer()}</body></html>'''
-    dest=P/path.lstrip('/')/'index.html' if path!='/' else P/'index.html'
-    dest.parent.mkdir(parents=True,exist_ok=True)
-    dest.write_text(html,encoding='utf-8')
+team_groups = [
+    ['Leadership', 'Runs the team', [['Bryan Pan', 'Captain', 'BP']]],
+    ['Software', 'Programs the robot', [['Yuvan Ramesh', 'Software Lead', 'YR'], ['Azaan Raza', 'Software Member', 'AR']]],
+    ['Hardware, Electrical & Design', 'Designs, wires, builds and fixes the robot', [['Arhaan Reddy', 'Hardware Lead', 'AR'], ['Rishi Mamdur', 'Electrical Lead', 'RM'], ['Neel Gupta', 'Design Lead', 'NG'], ['Nyles Han', 'Hardware Member', 'NH'], ['Jacob Li', 'Hardware Member', 'JL']]],
+    ['Business, Outreach & Media', 'Handles business, outreach events and media', [['Elan Jain', 'Business Lead', 'EJ'], ['Kaveesh Chaturvedi', 'Media Lead', 'KC']]],
+    ['Drive Team', 'Drives in matches and plans strategy', [['Damodar Kriplani', 'Driver', 'DK'], ['Ronav Gupta', 'Drive Coach / Youth Mentor', 'RG']]],
+    ['Mentors', 'Help and advise the team', [['Lina Tannous', 'Mentor', 'LT'], ['Leon Cox', 'Mentor', 'LC'], ['Ramana Cherukuri', 'Mentor', 'RC']]],
+]
 
-def eyebrow(txt):return f'<span class="eyebrow"><span class="eyebrow-dot"></span>{txt}</span>'
 
-def section_intro(kicker,title,sub=''):
-    return f'<div class="section-header">{eyebrow(kicker)}<h2>{title}</h2>{f"<p>{sub}</p>" if sub else ""}</div>'
+# ---------------------------------------------------------------- svg assets
+def _svg(path, cls):
+    s = (A / path).read_text(encoding='utf-8')
+    # inline copies don't need file metadata (the .svg files keep theirs)
+    s = re.sub(r'<metadata>.*?</metadata>', '', s, flags=re.S)
+    s = re.sub(r'\sxmlns:\w+="[^"]*"', '', s)
+    s = re.sub(r'\s(role|aria-label)="[^"]*"', '', s)
+    return s.replace('<svg ', f'<svg class="{cls}" aria-hidden="true" focusable="false" ', 1)
 
-hero_photo='''<div class="hero-gallery" data-hero-gallery role="region" aria-roledescription="carousel" aria-label="Recent team and event photos">
-  <div class="hero-gallery-images">
-    <a class="hero-gallery-slide is-active" href="/seasons/biobuzz/east-bay-meet-one/" data-slide data-title="East Bay League Meet One" data-subtitle="Team Helios with Eclipse · November 1, 2026" aria-label="View Team and robot"><img src="/assets/meet1-team-robot.webp" fetchpriority="high" alt="Six Helios team members posing with their Eclipse FTC competition robot"></a>
-    <a class="hero-gallery-slide" href="/seasons/biobuzz/east-bay-meet-one/" data-slide data-title="East Bay League Meet One" data-subtitle="118-point event-high alliance score" aria-label="View 118-point result" hidden><img src="/assets/meet1-score-118.webp" loading="lazy" alt="Competition results board showing a 118 to 49 qualification win with Helios 5214 on the red alliance"></a>
-    <a class="hero-gallery-slide" href="/seasons/biobuzz/east-bay-meet-one/" data-slide data-title="East Bay League Meet One" data-subtitle="A closer look at Eclipse" aria-label="View Eclipse robot close-up" hidden><img src="/assets/meet1-robot-workbench.webp" loading="lazy" alt="Helios Eclipse robot on the workbench, showing its yellow panel and mechanical components"></a>
-    <a class="hero-gallery-slide" href="/seasons/biobuzz/east-bay-meet-one/" data-slide data-title="East Bay League Meet One" data-subtitle="Working together at the field" aria-label="View Team at the field" hidden><img src="/assets/meet1-teammates-strategy.webp" loading="lazy" alt="Helios members discussing their robot beside a match field"></a>
-    <a class="hero-gallery-slide" href="/outreach/#lakeside-2026" data-slide data-title="STEM at Lakeside" data-subtitle="IntelliKits outreach · October 16, 2026" aria-label="View Lakeside workshop" hidden><img src="/assets/lakeside-team-workshop.webp" loading="lazy" alt="Helios FTC members demonstrating an IntelliKits model at the Lakeside outreach workshop"></a>
-    <a class="hero-gallery-slide" href="/outreach/#lakeside-2026" data-slide data-title="STEM at Lakeside" data-subtitle="IntelliKits outreach · October 16, 2026" aria-label="View Lakeside presentation" hidden><img src="/assets/lakeside-team-presentation.webp" loading="lazy" alt="Helios team members presenting robotics and engineering at Lakeside"></a>
-    <a class="hero-gallery-slide" href="/outreach/#lakeside-2026" data-slide data-title="STEM at Lakeside" data-subtitle="IntelliKits outreach · October 16, 2026" aria-label="View Lakeside programming" hidden><img src="/assets/lakeside-programming-group.webp" loading="lazy" alt="Helios team members standing with their FTC robot at the Lakeside programming challenge"></a>
-    <span class="gallery-image-hint">VIEW THE EVENT ↗</span>
-    <div class="hero-gallery-buttons"><button type="button" class="gallery-control" data-gallery-previous aria-label="Previous photo">←</button><button type="button" class="gallery-control" data-gallery-next aria-label="Next photo">→</button></div>
-  </div>
-  <div class="hero-gallery-caption"><a href="/seasons/biobuzz/east-bay-meet-one/" data-gallery-caption-link><strong data-gallery-caption-title>East Bay League Meet One</strong><span data-gallery-caption-subtitle>Team Helios with Eclipse · November 1, 2026</span></a><div class="gallery-dots" aria-label="Choose featured photo"><button type="button" class="is-active" data-gallery-dot="0" aria-label="Show Team and robot" aria-current="true"></button><button type="button" data-gallery-dot="1" aria-label="Show 118-point result"></button><button type="button" data-gallery-dot="2" aria-label="Show Eclipse robot close-up"></button><button type="button" data-gallery-dot="3" aria-label="Show Team at the field"></button><button type="button" data-gallery-dot="4" aria-label="Show Lakeside workshop"></button><button type="button" data-gallery-dot="5" aria-label="Show Lakeside presentation"></button><button type="button" data-gallery-dot="6" aria-label="Show Lakeside programming"></button></div></div>
+
+LOGO = _svg('logo/helios-logo.svg', 'logo')
+SUN = _svg('logo/helios-mark.svg', 'sun')
+
+arrow = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h11m-4.5-4.5L15 10l-4.5 4.5" stroke="currentColor" stroke-width="1.9"/></svg>'
+arrow_diag = '<svg class="icon icon--diag" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6 14 14 6M7.5 6H14v6.5" stroke="currentColor" stroke-width="1.9"/></svg>'
+arrow_back = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16 10H5m4.5-4.5L5 10l4.5 4.5" stroke="currentColor" stroke-width="1.9"/></svg>'
+expand = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6" stroke="currentColor" stroke-width="1.7"/></svg>'
+copy_icon = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.7"/></svg>'
+xray_icon = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/></svg>'
+
+
+# ---------------------------------------------------------------- text helpers
+def split(text, start=0):
+    """Wrap each word for the rise-in animation. *word* = serif accent."""
+    out, i = [], start
+    for tok in text.split(' '):
+        if not tok:
+            continue
+        serif = tok.startswith('*') and tok.endswith('*')
+        word = tok.strip('*')
+        cls = ' class="serif"' if serif else ''
+        out.append(f'<span class="w"><span{cls} style="--i:{i}">{word}</span></span>')
+        i += 1
+    return ' '.join(out)
+
+
+def lit_words(text):
+    """Words that light up one by one as you scroll."""
+    return ' '.join(f'<span class="lw">{w}</span>' for w in text.split(' ') if w)
+
+
+def btn(href, text, kind='sun', external=False, icon=None, attrs=''):
+    ic = icon or (arrow_diag if external else arrow)
+    ext = EXT if external else ''
+    return (f'<a class="btn btn--{kind}" href="{href}"{ext}{attrs}><span class="btn-label"><span>{text}</span>'
+            f'<span aria-hidden="true">{text}</span></span><span class="btn-icon">{ic}</span></a>')
+
+
+def tlink(href, text, external=False, cls=''):
+    ic = arrow_diag if external else arrow
+    return f'<a class="tlink {cls}" href="{href}"{EXT if external else ""}><span>{text}</span>{ic}</a>'
+
+
+def school_link():
+    return f'<a class="inline-link" href="{SCHOOL_URL}"{EXT}>The Quarry Lane School</a>'
+
+
+def marquee(items, direction=1, speed=1):
+    sep = f'<span class="mq-sun">{SUN}</span>'
+    row = ''.join(f'<span class="mq-item{" serif" if s else ""}">{t}</span>{sep}' for t, s in items)
+    return (f'<div class="marquee" data-marquee data-dir="{direction}" data-speed="{speed}"><div class="marquee-track">'
+            f'<div class="marquee-copy">{row}</div><div class="marquee-copy" aria-hidden="true">{row}</div></div></div>')
+
+
+def xray(cls='', label='Rendering of Eclipse, the Helios 2026–27 robot', priority=False, light_cad=False):
+    load = 'fetchpriority="high"' if priority else 'loading="lazy"'
+    alt_img = (f'<img class="xray-alt" src="{ROBOT["cad_light"]}" width="{ROBOT["w"]}" height="{ROBOT["h"]}" loading="lazy" decoding="async" alt="CAD model of Eclipse">'
+               if light_cad else '')
+    return (f'<div class="xray {cls}" data-xray data-cad="{ROBOT["cad"]}" style="--ar:{ROBOT["w"]}/{ROBOT["h"]}">'
+            f'<img class="xray-front" src="{ROBOT["render"]}" width="{ROBOT["w"]}" height="{ROBOT["h"]}" {load} decoding="async" alt="{label}">'
+            f'{alt_img}<canvas class="xray-canvas" aria-hidden="true"></canvas></div>')
+
+
+# ---------------------------------------------------------------- layout
+NAV = [('Home', '/', 'home', 'meet1-team-robot.webp'), ('About', '/about/', 'about', 'meet1-team-hands.webp'),
+       ('Team', '/team/', 'team', 'meet1-teammates-strategy.webp'), ('Outreach', '/outreach/', 'outreach', 'lakeside-team-workshop.webp'),
+       ('Seasons', '/seasons/', 'seasons', 'meet1-robot-game.webp'), ('Contact', '/contact/', 'contact', 'meet1-robot-workbench.webp')]
+
+
+def header():
+    return f'''<header class="site-header" data-header>
+<a href="/" class="site-logo" aria-label="Helios, FTC Team 5214, home">{LOGO}</a>
+<div class="header-actions">{btn('/contact/', 'Contact', 'sun', attrs=' data-magnetic')}
+<button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" data-menu-btn><span class="menu-btn-lines" aria-hidden="true"><i></i><i></i></span><span class="sr-only">Menu</span></button></div>
+</header>'''
+
+
+def menu(active):
+    links = ''
+    for n, (title, url, key, img) in enumerate(NAV):
+        cur = ' aria-current="page"' if key == active else ''
+        links += (f'<li style="--n:{n}"><a class="menu-link{" is-active" if key == active else ""}" href="{url}" data-img="/assets/{img}"{cur}>'
+                  f'<span class="menu-link-text"><span>{title}</span><span aria-hidden="true">{title}</span></span></a></li>')
+    season_links = ''.join(f'<a href="{url}"{EXT if url.startswith("http") else ""}><span>{year}</span>{name}</a>' for year, name, url in seasons[:4])
+    return f'''<div class="menu" id="site-menu" data-menu aria-label="Site menu">
+<div class="menu-inner">
+<nav aria-label="Main"><ul class="menu-list">{links}</ul></nav>
+<div class="menu-side">
+<div class="menu-block"><span class="menu-label">Seasons</span>{season_links}<a href="/seasons/">All seasons</a></div>
+<div class="menu-block"><span class="menu-label">Say hi</span><a href="mailto:{EMAIL}">{EMAIL}</a><a href="{INSTAGRAM}"{EXT}>Instagram</a></div>
+</div>
+</div>
+<div class="menu-preview" aria-hidden="true"><img alt="" src="/assets/meet1-team-robot.webp"></div>
 </div>'''
 
-home=f'''
-<section class="hero section-block"><div class="container hero-layout"><div class="hero-copy">{eyebrow('THE QUARRY LANE SCHOOL · DUBLIN, CALIFORNIA')}<h1>Building robots.<br><span>Opening doors.</span></h1><p>We’re Helios, FTC Team 5214, based at <a class="inline-school-link" href="{SCHOOL_URL}" target="_blank" rel="noopener noreferrer">The Quarry Lane School ↗</a> in Dublin, California. We design and program competition robots, then take what we’ve learned into our community.</p><div class="hero-actions">{link('/seasons/biobuzz/','Explore our season','dark')}{link('/team/','Meet the team','outline')}</div><div class="hero-note">2026–27 SEASON <strong>BIOBUZZ</strong> · FTC TEAM 5214</div></div>{hero_photo}</div></section>
-<section class="stats-band"><div class="container stats-grid"><div><strong>16</strong><span>Seasons of FTC experience</span></div><div><strong>2010</strong><span>Our rookie year</span></div><div><strong>5214</strong><span>One team, many ideas</span></div><div><strong>Dublin</strong><span>California, USA</span></div></div></section>
-<section class="section-block first-explainer" id="first-and-ftc"><div class="container"><div class="first-explainer-top"><span class="eyebrow">GETTING TO KNOW ROBOTICS</span><h2>What are FIRST and FTC?</h2><p>Robotics competitions are only part of the story. These programs help students learn engineering, teamwork, and leadership by doing real projects.</p></div><div class="first-explainer-grid"><article><span class="explainer-index">01 / THE ORGANIZATION</span><h3>What is FIRST?</h3><p><strong>FIRST</strong> (For Inspiration and Recognition of Science and Technology) is a nonprofit that introduces young people to STEM through team-based robotics programs. Students learn to solve problems, work together, and support their communities.</p><a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer">Learn about FIRST <span aria-hidden="true">↗</span></a></article><article><span class="explainer-index">02 / OUR COMPETITION</span><h3>What is FTC robotics?</h3><p><strong>FIRST Tech Challenge (FTC)</strong> is a robotics competition for students in grades 7–12. Each season, teams design, build, and program a robot for a new game, then compete in matches with and against other teams. Outreach is part of the experience, too.</p><a href="https://www.firstinspires.org/programs/ftc/" target="_blank" rel="noopener noreferrer">Explore FIRST Tech Challenge <span aria-hidden="true">↗</span></a></article></div></div></section>
-<section class="section-block story-section"><div class="container story-grid"><div class="story-poster"><span>TEAM 5214 / DUBLIN, CA</span><strong>16</strong><p>seasons of learning, competing, and building together.</p><small>SINCE 2010</small></div><div class="story-text">{eyebrow('WHO WE ARE')}<h2>Meet Team 5214.</h2><p>We’re students who spend our time making mechanisms work, fixing code, planning matches, and learning from what didn’t go right the first time.</p><p>Our team has been competing in FTC since 2010. Every season brings a new game and a new set of things to figure out together.</p>{link('/about/','Our story','text')}</div></div></section>
-<section class="section-block seasons-preview"><div class="container"><div class="section-row">{section_intro('FROM THE WORKSHOP','Two seasons. <em>One continuous build.</em>','See where we are now and what we learned along the way.')}{link('/seasons/','All seasons','text')}</div><div class="feature-grid"><a class="feature-card feature-card--biobuzz" href="/seasons/biobuzz/"><div class="feature-card-head"><span>01 / CURRENT SEASON</span><span class="pill light-pill">IN PROGRESS <span class="pulse"></span></span></div><div class="season-graphic season-graphic--bee"><svg viewBox="0 0 280 180" fill="none" aria-hidden="true"><path d="M26 89h228M140 15v150" stroke="#F5D9A4" stroke-width="1" stroke-dasharray="4 6"/><circle cx="140" cy="90" r="64" stroke="#EFB653" stroke-width="1.5"/><circle cx="140" cy="90" r="39" stroke="#EFB653" stroke-width="1.5"/><path d="M103 74c0-19 16-34 35-34 9 0 18 4 24 10 6-6 14-10 23-10 15 0 27 12 27 27 0 17-16 28-50 45-33-17-50-29-50-45" stroke="#CB653C" stroke-width="3" stroke-linecap="round"/><path d="M111 95h69M119 108h53" stroke="#CB653C" stroke-width="6" stroke-linecap="round"/></svg></div><div class="feature-card-bottom"><small>2026—2027</small><h3>BIOBUZZ</h3><div class="feature-footer"><span>Designing what comes next</span>{arrow_diag}</div></div></a><a class="feature-card feature-card--decode" href="/seasons/decode/"><div class="feature-card-head"><span>02 / PREVIOUS SEASON</span><span class="pill">2025–26</span></div><div class="season-graphic season-graphic--decode"><svg viewBox="0 0 280 180" fill="none" aria-hidden="true"><circle cx="140" cy="90" r="65" stroke="#D7AB8A" stroke-width="1.5"/><circle cx="140" cy="90" r="42" stroke="#D7AB8A" stroke-width="1.5"/><path d="M95 46 185 136M185 46 95 136" stroke="#C46D4A" stroke-width="6" stroke-linecap="round"/><path d="M140 14v152M64 90h152" stroke="#D7AB8A" stroke-dasharray="3 6"/><rect x="115" y="65" width="50" height="50" rx="8" fill="#F5E7DD" stroke="#C46D4A" stroke-width="2"/><path d="M125 82h30m-30 10h30m-30 10h18" stroke="#C46D4A" stroke-width="3" stroke-linecap="round"/></svg></div><div class="feature-card-bottom"><small>2025—2026</small><h3>DECODE</h3><div class="feature-footer"><span>Innovate Award · East Bay</span>{arrow_diag}</div></div></a></div></div></section>
-<section class="section-block impact-section"><div class="container impact-layout"><div>{eyebrow('BEYOND COMPETITION')}<h2>Robotics belongs<br>in our community.</h2></div><div><p>On October 16, 2026, we brought our FTC robot and STEM activities to children at Lakeside Apartments in Concord. See what we did and why access to hands-on learning matters to us.</p>{link('/outreach/','Explore outreach','dark')}</div><span class="impact-big-sun" aria-hidden="true">✳</span></div></section>
-<section class="closing-cta"><div class="container closing-inner"><div><span class="eyebrow">LET’S TALK ROBOTS</span><h2>Have an idea?<br>We’re all ears.</h2></div>{link('/contact/','Get in touch','light')}</div></section>
-'''
-page('Home','Helios FTC Team 5214 is based at The Quarry Lane School in Dublin, California. Follow our robots, seasons, team, and outreach.', 'home',home)
 
-about=f'''<section class="page-hero page-hero--about"><div class="container narrow-content">{eyebrow('ABOUT HELIOS / FTC 5214')}<h1>Experience makes<br>us better. <em>Curiosity</em><br>keeps us going.</h1><p>16 seasons of solving problems, working together, and learning through the process. That’s the story of Team 5214.</p></div><span class="page-hero-watermark">16</span></section>
-<section class="section-block"><div class="container about-overview"><div>{eyebrow('OUR STORY')}<h2>Since 2010.<br>Still building.</h2></div><div class="readable"><p>Team 5214 began competing in FIRST Tech Challenge in 2010. Our team is based at <a class="inline-school-link" href="{SCHOOL_URL}" target="_blank" rel="noopener noreferrer">The Quarry Lane School ↗</a> in Dublin, California. We've been part of a program that asks students to think like engineers, collaborate as teammates, and learn by building something real.</p><p>Today, as Helios, we bring that history into every new challenge. Seasons change, designs evolve, and the team keeps learning.</p><a class="source-link" href="{TEAM_SOURCE}" target="_blank" rel="noopener noreferrer">View our official FIRST team record {arrow_diag}</a></div></div></section>
-<section class="section-block timeline-section"><div class="container"><div class="section-row">{section_intro('MILESTONES','The journey <em>so far.</em>')}</div><div class="timeline"><div class="timeline-item"><div class="timeline-year">2010</div><div><strong>Where it started</strong><p>Team 5214’s rookie FTC season. The beginning of a long-running engineering journey.</p></div></div><div class="timeline-item"><div class="timeline-year">2023–24</div><div><strong>CENTERSTAGE</strong><p>Recognized with the Motivate Award at the East Bay League Tournament.</p></div></div><div class="timeline-item"><div class="timeline-year">2025–26</div><div><strong>DECODE</strong><p>Earned the Innovate Award at the East Bay League Tournament.</p></div></div><div class="timeline-item"><div class="timeline-year">2026–27</div><div><strong>BIOBUZZ</strong><p>Our current challenge. A new season to design, test, and grow.</p></div></div></div></div></section>
-<section class="section-block philosophy-section"><div class="container"><div class="section-row">{section_intro('WHAT DRIVES US','How we approach <em>the work.</em>')}</div><div class="value-grid"><article><span>01</span><div class="value-icon">◎</div><h3>Think it through.</h3><p>Start with the problem. Ask good questions before reaching for a solution.</p></article><article><span>02</span><div class="value-icon">⌘</div><h3>Make it real.</h3><p>Turn sketches and plans into code, mechanisms, and working prototypes.</p></article><article><span>03</span><div class="value-icon">↗</div><h3>Keep improving.</h3><p>Test what we made, listen to feedback, and come back with something better.</p></article></div></div></section>
-<section class="section-block small-cta"><div class="container small-cta-inner"><div>{eyebrow('MEET THE PEOPLE')}<h2>Every great robot takes a team.</h2></div>{link('/team/','Meet Helios','dark')}</div></section>'''
-page('About','Learn about Helios FTC Team 5214, competing in FIRST Tech Challenge since 2010 and active for 16 seasons.', 'about',about,'/about/')
-
-team_groups=[["Leadership","Coordinating the team",[["Bryan Pan","Captain","BP"]]],["Software","Programming the robot",[["Yuvan Ramesh","Software Lead","YR"],["Azaan Raza","Software Member","AR"]]],["Hardware, Electrical & Design","Designing, wiring, building, and refining the robot",[["Arhaan Reddy","Hardware Lead","AR"],["Rishi Mamdur","Electrical Lead","RM"],["Neel Gupta","Design Lead","NG"],["Nyles Han","Hardware Member","NH"],["Jacob Li","Hardware Member","JL"]]],["Business, Outreach & Media","Business operations, outreach, and media",[["Elan Jain","Business Lead","EJ"],["Kaveesh Chaturvedi","Media Lead","KC"]]],["Drive Team","Robot driving and match strategy",[["Damodar Kriplani","Driver","DK"],["Ronav Gupta","Drive Coach / Youth Mentor","RG"]]],["Mentors","Guiding and supporting the team",[["Lina Tannous","Mentor","LT"],["Leon Cox","Mentor","LC"],["Ramana Cherukuri","Mentor","RC"]]]]
-def member_card(name,role,initials,index):
-    return f'''<article class="member-card"><div class="member-photo" role="img" aria-label="Photo coming soon for {name}"><span class="photo-corner">{index:02d} / FTC 5214</span><div class="member-avatar"><span aria-hidden="true">{initials}</span></div><span class="photo-caption">PHOTO COMING SOON</span></div><div class="member-card-bottom"><span class="member-role">{role.upper()}</span><h3>{name}</h3></div></article>'''
-
-def team_divisions():
-    sections=[]
-    index=0
-    for section_index,(division,subtitle,people) in enumerate(team_groups,start=1):
-        cards=[]
-        for name,role,initials in people:
-            index+=1
-            cards.append(member_card(name,role,initials,index))
-        sections.append(f'''<section class="team-division" aria-labelledby="team-division-{section_index}"><div class="division-heading"><div><span class="division-eyebrow">{section_index:02d} / HELIOS 2026–27</span><h2 id="team-division-{section_index}">{division}</h2></div><p>{subtitle}</p></div><div class="member-grid">{''.join(cards)}</div></section>''')
-    return ''.join(sections)
-
-team=f'''<section class="page-hero page-hero--team"><div class="container team-hero-layout"><div class="team-hero-copy">{eyebrow('THE PEOPLE BEHIND 5214')}<h1>Different strengths.<br><em>One team.</em></h1><p>Meet the students and mentors behind our hardware, software, outreach, and competition work.</p></div><figure class="team-hero-photo"><img src="/assets/meet1-team-robot.webp" width="1024" height="768" alt="Helios FTC members posing with their Eclipse robot at East Bay League Meet One"></figure></div></section><section class="section-block team-section"><div class="container"><div class="team-topline"><span>OUR 2026–27 TEAM</span><span>11 STUDENTS · 04 MENTORS</span></div>{team_divisions()}<div class="team-photo-note"><span class="info-symbol">i</span>Portraits are coming soon. Each card has a placeholder for now.</div></div></section><section class="section-block team-bottom"><div class="container team-bottom-inner"><div>{eyebrow('ONE TEAM, DIFFERENT ROLES')}<h2>Every part matters.</h2></div><p>Design, fabrication, electrical systems, programming, driving, outreach, and coaching each play a role in making a season work. We build better robots when we work together.</p></div></section>'''
-page('Our Team','Meet the 2026–27 Helios FTC 5214 team: leadership, software, hardware, electrical, design, business, outreach, drive team, and mentors.', 'team',team,'/team/')
+def footer():
+    return f'''<footer class="site-footer" data-theme="dark">
+<div class="footer-panel">
+<div class="footer-top">
+<div class="footer-cta">
+<h2 class="footer-title">{split('Get in touch')}</h2>
+<p>Questions about the team, sponsorship, or having us at your event? Email us.</p>
+<div class="copy-row"><a class="footer-email" href="mailto:{EMAIL}">{EMAIL}</a><button class="copy-btn" type="button" data-copy="{EMAIL}">{copy_icon}<span>Copy</span></button></div>
+</div>
+<div class="footer-cols">
+<div class="footer-col"><span class="footer-label">Pages</span><a href="/about/">About</a><a href="/team/">Team</a><a href="/outreach/">Outreach</a><a href="/seasons/">Seasons</a><a href="/contact/">Contact</a></div>
+<div class="footer-col"><span class="footer-label">Follow</span><a href="{INSTAGRAM}"{EXT}>Instagram</a><a href="{TEAM_SOURCE}"{EXT}>FIRST team profile</a><a href="{SCHOOL_URL}"{EXT}>The Quarry Lane School</a></div>
+</div>
+</div>
+<div class="footer-sun" data-footer-sun aria-hidden="true">{SUN}</div>
+<a class="footer-logo" href="/" aria-label="Helios home">{LOGO}</a>
+<div class="footer-bottom"><span>© <span data-year>2026</span> Helios, FTC Team 5214, Dublin, California</span><span>Student team website. Not an official FIRST site.</span></div>
+</div>
+</footer>'''
 
 
-outreach=f'''<section class="page-hero page-hero--outreach"><div class="container narrow-content">{eyebrow('COMMUNITY OUTREACH')}<h1>Sharing robotics.<br><em>Making it accessible.</em></h1><p>We take what we learn on our FTC team and turn it into opportunities for younger students to try engineering firsthand.</p></div></section>
-<section class="section-block lakeside-section" id="lakeside-2026"><div class="container">
-  <div class="outreach-event-heading"><div>{eyebrow('OCTOBER 16, 2026 / CONCORD, CALIFORNIA')}<h2>IntelliKits at Lakeside.</h2><p>One event. A robot demonstration, a programming activity, and a chance to make something by hand.</p></div><div class="outreach-event-index">01 / LATEST OUTREACH</div></div>
-  <div class="lakeside-story"><div class="lakeside-story-text"><h3>From watching a robot to building something of their own.</h3><p>On October 16, we visited the Lakeside Apartments community center in Concord to host a STEM event for children in the youth program.</p><p>We introduced our FTC competition robot and talked about the design and programming behind it. Then we invited the kids to try our IntelliKits activities, including a hands-on model-car project.</p><p>IntelliKits is what we call our accessible, build-it-yourself engineering activities. Lakeside was one of the ways we brought those kits directly to students, not a separate outreach project.</p><p>We want to help make robotics and engineering more accessible for children in underserved communities, where extracurricular STEM opportunities and equipment can be harder to find.</p><div class="outreach-tags"><span>IntelliKits</span><span>Robot demonstration</span><span>Programming</span><span>Hands-on building</span></div></div><figure class="outreach-main-photo"><img src="/assets/lakeside-team-workshop.webp" width="1050" height="551" alt="Helios members demonstrating engineering models at the Lakeside community center" loading="eager"><figcaption>Sharing engineering ideas during the Lakeside IntelliKits workshop.</figcaption></figure></div>
-  <div class="outreach-photo-grid"><figure><img src="/assets/lakeside-team-presentation.webp" loading="lazy" alt="Helios members introducing engineering concepts at Lakeside"><figcaption><strong>Sharing our approach</strong><span>Team members discuss robotics and problem-solving.</span></figcaption></figure><figure><img src="/assets/lakeside-programming-group.webp" loading="lazy" width="2048" height="1134" alt="Helios team members gathered by their competition robot during the Lakeside programming activity"><figcaption><strong>Thinking like programmers</strong><span>The team shares a programming challenge and introduces the FTC robot.</span></figcaption></figure><figure><img src="/assets/lakeside-intellikits-demo.webp" loading="lazy" alt="Helios member holding an IntelliKits engineering model"><figcaption><strong>Explaining the design</strong><span>A closer look at how a simple model works.</span></figcaption></figure><figure><img src="/assets/lakeside-kit-parts.webp" loading="lazy" alt="IntelliKits components and model-car parts on a workshop table"><figcaption><strong>Hands-on building</strong><span>Exploring the parts used in our kits.</span></figcaption></figure><figure><img src="/assets/intellikits-rubber-band-car.webp" loading="lazy" alt="A blue rubber-band-powered IntelliKits model car"><figcaption><strong>The finished model</strong><span>Testing a small car powered by a rubber band.</span></figcaption></figure></div>
-  <div class="outreach-next"><div><span class="eyebrow">OUR INTELLIKITS APPROACH</span><h3>Make it. Test it. Learn from it.</h3><p>We want kids to do more than watch a demonstration. With IntelliKits, they can experiment, ask questions, and see what happens when they change their designs. We'll keep bringing these activities to future community events.</p></div>{link('/contact/','Bring IntelliKits to your event','outline')}</div>
+def page(title, desc, active, content, path='/', loader=False):
+    t = escape(title, quote=True)
+    d = escape(desc, quote=True)
+    loader_html = ''
+    if loader:
+        loader_html = f'<div class="loader" aria-hidden="true"><div class="loader-sun">{SUN}</div><div class="loader-count"><span data-loader-count>0</span>%</div><div class="loader-word">Helios</div></div>'
+    head_js = ("document.documentElement.classList.add('js');try{var s=sessionStorage;"
+               "if(s.getItem('helios-nav')==='1'){document.documentElement.classList.add('is-entering');}"
+               + ("if(!s.getItem('helios-seen')){document.documentElement.classList.add('is-loading');}" if loader else '')
+               + "}catch(e){}")
+    html = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#F2F0EB"><meta name="description" content="{d}"><meta property="og:type" content="website"><meta property="og:title" content="{t} | Helios FTC 5214"><meta property="og:description" content="{d}"><meta property="og:image" content="/assets/social-card.png"><meta name="twitter:card" content="summary_large_image"><title>{escape(title)} | Helios FTC 5214</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="preload" href="/assets/fonts/mona-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/assets/fonts/gloock-latin-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/styles.css"><script>{head_js}</script><script src="/assets/vendor/lenis.min.js" defer></script><script src="/assets/main.js" defer></script><!-- Vercel Web Analytics: activate from the Vercel project Analytics tab. --><script>window.va = window.va || function () {{ (window.vaq = window.vaq || []).push(arguments); }};</script><script defer src="/_vercel/insights/script.js"></script></head><body data-page="{active}"><a class="skip-link" href="#main">Skip to content</a>{loader_html}<div class="curtain" aria-hidden="true"><div class="curtain-sun">{SUN}</div></div>{header()}{menu(active)}<main id="main">{content}</main>{footer()}</body></html>'''
+    dest = P / path.strip('/') / 'index.html' if path != '/' else P / 'index.html'
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(html, encoding='utf-8')
+
+
+def page_hero(title, lead, meta='', extra='', top='', theme='light', cls=''):
+    meta_html = f'<p class="page-meta">{meta}</p>' if meta else ''
+    lead_html = f'<p class="page-lead">{lead}</p>' if lead else ''
+    return (f'<section class="page-hero {cls}" data-theme="{theme}"><div class="container">{top}{meta_html}'
+            f'<h1 class="page-title" data-split>{split(title)}</h1>{lead_html}{extra}</div></section>')
+
+
+def section_head(title, lead='', action='', cls=''):
+    lead_html = f'<p class="section-lead">{lead}</p>' if lead else ''
+    return f'<div class="section-head {cls}"><div><h2 class="h2" data-split>{split(title)}</h2>{lead_html}</div>{action}</div>'
+
+
+def img_reveal(src, w, h, alt, cls='', loading='lazy', parallax=''):
+    px = f' data-parallax="{parallax}"' if parallax else ''
+    return (f'<figure class="reveal-img {cls}" data-reveal-img><div class="reveal-img-inner"{px}>'
+            f'<img src="{src}" width="{w}" height="{h}" loading="{loading}" decoding="async" alt="{alt}"></div></figure>')
+
+
+# ================================================================ HOME
+home_hero = f'''<section class="hero" data-theme="light" data-hero>
+<div class="hero-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<p class="hero-word" aria-hidden="true" data-hero-word>Eclipse</p>
+<div class="hero-stage">{xray('xray--hero', priority=True, light_cad=True)}</div>
+<div class="hero-bottom">
+<div class="hero-intro">
+<h1 class="hero-title" data-split>{split("We’re Helios, FTC Team 5214.")}</h1>
+<p class="hero-text">FIRST Tech Challenge team from {school_link()} in Dublin, CA. This is Eclipse, our 2026–27 robot.</p>
+<div class="hero-actions">{btn('/seasons/biobuzz/', 'This season', 'sun', attrs=' data-magnetic')}{btn('/team/', 'Meet the team', 'line', attrs=' data-magnetic')}</div>
+</div>
+<div class="hero-side">
+<button class="xray-toggle" type="button" data-xray-toggle aria-pressed="false">{xray_icon}<span class="xray-toggle-text" data-on="Show the robot" data-off="Show the CAD">Show the CAD</span></button>
+<p class="xray-hint">Move your mouse over Eclipse to see the CAD underneath.</p>
+<a class="latest" href="{MEET1}"><img src="/assets/meet1-score-118.webp" width="1024" height="768" alt="" loading="lazy"><span><small>Latest</small><strong>East Bay League Meet One</strong><span>Nov 1 · 118-point alliance high score</span></span>{arrow}</a>
+</div>
+</div>
+</section>'''
+
+marquee_band = f'''<section class="marquee-band" data-theme="dark" aria-label="Team facts">
+{marquee([('Helios', False), ('FTC Team 5214', True), ('Dublin, California', False), ('Since 2010', True)], 1, 1)}
+{marquee([('BIOBUZZ 2026–27', False), ('Innovate Award, DECODE', True), ('Motivate Award, CENTERSTAGE', False), ('East Bay League', True)], -1, 0.8)}
+</section>'''
+
+intro = f'''<section class="intro" data-theme="dark"><div class="container">
+<p class="intro-text" data-lit>{lit_words("We’ve been an FTC team since 2010. Every season FIRST puts out a new game, and we design, build and program a robot to play it. We also run STEM workshops for younger kids, like our IntelliKits event in Concord this October.")}</p>
+<dl class="stats">
+<div><dt>Seasons in FTC</dt><dd data-count="16">16</dd></div>
+<div><dt>Rookie season</dt><dd>2010</dd></div>
+<div><dt>DECODE match record</dt><dd>11–7</dd></div>
+<div><dt>Meet One high score</dt><dd data-count="118">118</dd></div>
+</dl></div></section>'''
+
+spin_notes = [
+    (0.06, 0.26, 'Drive', 'Four 104 mm mecanum wheels, so Eclipse can drive and strafe in any direction.'),
+    (0.28, 0.46, 'Intake', 'Game pieces come in at the front and ride up the intake ramp.'),
+    (0.48, 0.64, 'Shooter', 'A transfer ramp feeds the shooter on top of the robot.'),
+    (0.66, 1.01, 'CAD', 'We designed Eclipse in Onshape. This is the real CAD model.'),
+]
+notes_html = ''.join(f'<li class="spin-note" data-from="{a}" data-to="{b}"><strong>{t}</strong><span>{d}</span></li>' for a, b, t, d in spin_notes)
+spin = f'''<section class="spin" data-theme="dark" data-spin data-frames="{ROBOT['spin_frames']}" data-src="{ROBOT['spin']}" data-src-small="{ROBOT['spin_small']}" aria-label="Eclipse, our 2026–27 robot, turning 360 degrees">
+<div class="spin-sticky">
+<p class="spin-ghost" aria-hidden="true" data-spin-ghost>Eclipse</p>
+<div class="spin-head"><p class="spin-kicker">Our 2026–27 robot</p><h2 class="spin-title" data-split>{split('Eclipse')}</h2></div>
+<div class="spin-stage"><canvas class="spin-canvas" role="img" aria-label="Eclipse rotating, then switching to its CAD model"></canvas><span class="spin-scan" aria-hidden="true"></span></div>
+<ul class="spin-notes">{notes_html}</ul>
+<div class="spin-meter" aria-hidden="true"><span data-spin-deg>000°</span><i><b data-spin-bar></b></i><span data-spin-mode>Render</span></div>
+</div>
+</section>'''
+
+track_items = [
+    ('meet1-team-robot.webp', 1024, 768, 'The team with Eclipse at Meet One', 'The team with Eclipse', 34, 4, 0.6),
+    ('meet1-robot-field.webp', 1120, 1680, 'Eclipse on the competition floor', 'Ready for a match', 20, 18, -0.8),
+    ('meet1-score-118.webp', 1024, 768, 'Match results showing a 118 to 49 win in Qualification 17', 'Q17: 118 to 49', 28, 46, 1.0),
+    ('meet1-robot-game.webp', 1680, 1120, 'Eclipse on the field during a match', 'On the field', 36, 10, -0.5),
+    ('meet1-team-hands.webp', 1680, 1120, 'Helios team members at the event', 'Between matches', 26, 40, 0.9),
+    ('meet1-teammates-strategy.webp', 1120, 1680, 'Two team members talking strategy beside the field', 'Planning the next match', 18, 8, -0.7),
+    ('meet1-robot-workbench.webp', 1680, 1120, 'Eclipse on the workbench in the pits', 'In the pits', 32, 34, 0.5),
+]
+track_html = ''.join(
+    f'<figure class="track-item" style="--w:{w}vw;--y:{y}vh" data-drift="{dr}"><div class="track-img"><img src="/assets/{f}" width="{iw}" height="{ih}" loading="lazy" decoding="async" alt="{alt}"></div><figcaption>{cap}</figcaption></figure>'
+    for f, iw, ih, alt, cap, w, y, dr in track_items)
+track = f'''<section class="track" data-theme="light" data-track aria-labelledby="track-title">
+<div class="track-sticky">
+<p class="track-ghost" aria-hidden="true" data-track-ghost>Meet One</p>
+<div class="track-rail" data-track-rail>
+<div class="track-intro"><p class="page-meta">East Bay League · Nov 1, 2026</p><h2 class="h2" id="track-title" data-split>{split('Meet *One*')}</h2><p>Our first league meet of the season, at Quarry Lane. In Qualification 17 our alliance won 118 to 49, the highest score of the event.</p></div>
+{track_html}
+<a class="track-end" href="{MEET1}"><span>See all 9 photos</span>{arrow}</a>
+</div>
+</div>
+</section>'''
+
+season_split = f'''<section class="section seasons-home" data-theme="light"><div class="container">
+{section_head('Seasons', "Every season is a new game. Here’s this one and the last one.", tlink('/seasons/', 'All seasons'))}
+<div class="season-duo">
+<a class="season-big" href="/seasons/biobuzz/" data-hover-img="/assets/meet1-robot-field.webp"><span class="season-big-meta"><span class="serif">This season</span>2026–27</span><span class="season-big-name">Biobuzz</span><span class="season-big-go">{arrow}</span></a>
+<a class="season-big" href="/seasons/decode/" data-hover-img="/assets/meet1-score-118.webp"><span class="season-big-meta"><span class="serif">Last season</span>2025–26 · Innovate Award</span><span class="season-big-name">Decode</span><span class="season-big-go">{arrow}</span></a>
+</div></div>
+<div class="hover-img" aria-hidden="true" data-hover-img-el><img alt=""></div>
+</section>'''
+
+all_people = [(name, role) for _, _, people in team_groups for name, role, _ in people]
+wall = ''.join(f'<li><span class="wall-name">{n}</span><span class="wall-role">{r}</span></li>' for n, r in all_people)
+team_wall = f'''<section class="section team-wall" data-theme="dark"><div class="container">
+{section_head('The team', '11 students and 4 mentors this season.', btn('/team/', 'Meet the team', 'sun', attrs=' data-magnetic'))}
+<ul class="wall">{wall}</ul>
+</div></section>'''
+
+outreach_home = f'''<section class="section outreach-home" data-theme="light"><div class="container outreach-grid">
+{img_reveal('/assets/lakeside-team-workshop.webp', 1050, 551, 'Helios members showing an IntelliKits model at the Lakeside workshop', 'outreach-photo', parallax='0.08')}
+<div class="outreach-copy">
+<p class="page-meta">October 16, 2026 · Concord, CA</p>
+<h2 class="h2" data-split>{split('Outreach')}</h2>
+<p>We ran a STEM event at the Lakeside Apartments community center in Concord. We showed the kids our competition robot, ran a programming activity, and helped them build model cars from our IntelliKits.</p>
+{btn('/outreach/', 'Read about it', 'ink', attrs=' data-magnetic')}
+</div>
+</div></section>'''
+
+home = home_hero + marquee_band + intro + spin + track + season_split + team_wall + outreach_home
+page('Home', 'Helios is FTC Team 5214 from The Quarry Lane School in Dublin, California. See our robot, our seasons, our team and our outreach.', 'home', home, loader=True)
+
+# ================================================================ ABOUT
+milestones = [
+    ('2010', 'Rookie season', 'Team 5214 competes in FIRST Tech Challenge for the first time.'),
+    ('2023–24', 'CENTERSTAGE', 'Motivate Award at the East Bay League Tournament.'),
+    ('2025–26', 'DECODE', 'Innovate Award, sponsored by RTX, at the East Bay League Tournament.'),
+    ('2026–27', 'BIOBUZZ', 'This season. Our robot is Eclipse.'),
+]
+timeline = ''.join(f'<li class="tl-item" data-tl-item><span class="tl-year">{y}</span><div><h3>{t}</h3><p>{d}</p></div></li>' for y, t, d in milestones)
+subteams = ''.join(f'<li><h3>{name}</h3><p>{sub}</p></li>' for name, sub, _ in team_groups)
+
+about = page_hero('About Helios', 'We’re FTC Team 5214 from The Quarry Lane School in Dublin, California. We’ve competed in FIRST Tech Challenge since 2010.', 'Since 2010') + f'''
+<section class="section" data-theme="light"><div class="container two-col">
+{img_reveal('/assets/meet1-team-hands.webp', 1680, 1120, 'Helios team members at East Bay League Meet One', parallax='0.06')}
+<div class="prose">
+<h2 class="h3">What we do</h2>
+<p>Every season starts with a new game from FIRST. We design the robot in CAD, build it, program it, and test it until it’s ready for East Bay League meets.</p>
+<p>We also run outreach events for younger kids. In October we brought our robot and our IntelliKits to a community center in Concord.</p>
+<p>Our official results are on the FIRST events site. Older records may list the team under a previous name.</p>
+{tlink(TEAM_SOURCE, 'Our FIRST team record', True)}
+</div>
 </div></section>
-<section class="closing-cta"><div class="container closing-inner"><div><span class="eyebrow">BRING STEM TO YOUR COMMUNITY</span><h2>Want to plan an event together?</h2></div>{link('/contact/','Contact our team','light')}</div></section>'''
-
-page('Outreach','See how Helios FTC 5214 brought IntelliKits, FTC robotics and hands-on STEM to the Lakeside community.', 'outreach',outreach,'/outreach/')
-
-archive=''.join(f'<a href="{url}" target="_blank" rel="noopener noreferrer"><span class="archive-year">{year}</span><strong>{name}</strong><span class="archive-tag">FIRST RECORD</span>{arrow_diag}</a>' for year,name,url in seasons[2:])
-seasons_page=f'''<section class="page-hero page-hero--seasons"><div class="container narrow-content">{eyebrow('FROM FIRST SKETCH TO FINAL MATCH')}<h1>Every season,<br>a new <em>challenge.</em></h1><p>Look closer at our recent seasons—and explore the years that brought Team 5214 here.</p></div></section><section class="section-block"><div class="container"><div class="season-main-grid"><a class="season-main-card current" href="/seasons/biobuzz/"><span class="season-card-kicker">2026–2027 <span class="season-status">CURRENT SEASON</span></span><div class="season-main-center"><span class="giant-season-index">01</span><h2>BIOBUZZ</h2><p>New game. New questions. New ideas on the workbench.</p></div><span class="season-card-bottom">Explore the season {arrow_diag}</span></a><a class="season-main-card past" href="/seasons/decode/"><span class="season-card-kicker">2025–2026 <span>PREVIOUS SEASON</span></span><div class="season-main-center"><span class="giant-season-index">02</span><h2>DECODE</h2><p>An Innovate Award and a season of design, iteration, and competition.</p></div><span class="season-card-bottom">Explore the season {arrow_diag}</span></a></div></div></section><section class="section-block archive-section"><div class="container"><div class="archive-heading">{section_intro('THROUGH THE YEARS','The season <em>archive.</em>','Earlier seasons link to Team 5214’s verified results on the official FIRST events website.')}</div><div class="archive-list">{archive}</div><p class="archive-note">Official historical records may list a previous team name for the same team number.</p></div></section>'''
-page('Seasons','Explore Helios FTC Team 5214 seasons including 2026–27 BIOBUZZ, 2025–26 DECODE, and the FIRST events history.', 'seasons',seasons_page,'/seasons/')
-
-event_preview="<section class=\"section-block biobuzz-events\" id=\"season-events\"><div class=\"container\"><div class=\"section-row\"><div class=\"section-header\"><span class=\"eyebrow\"><span class=\"eyebrow-dot\"></span>2026–27 COMPETITION LOG</span><h2>Season <em>events.</em></h2><p>Our latest matches, people, and robot in action.</p></div></div><a class=\"meet-event-card\" href=\"/seasons/biobuzz/east-bay-meet-one/\" aria-label=\"Explore East Bay League Meet One photos and results\"><div class=\"meet-event-media\"><img src=\"/assets/meet1-team-robot.webp\" width=\"1024\" height=\"768\" loading=\"lazy\" alt=\"Helios team members posing with their Eclipse robot at East Bay League Meet One\"></div><div class=\"meet-event-copy\"><span class=\"eyebrow\">01 / NOVEMBER 1, 2026 · DUBLIN, CA</span><h3>East Bay League Meet One</h3><p>Helios had a strong opening meet, with our alliance posting an event-high 118 points in Qualification 17. It was a great start to BIOBUZZ and a chance to put Eclipse to the test.</p><span class=\"meet-event-cta\">See the event photos &amp; highlights <span aria-hidden=\"true\">↗</span></span></div></a></div></section>"
-
-biobuzz=f'''<section class="season-detail-hero biobuzz-detail"><div class="container"><a href="/seasons/" class="back-link">← ALL SEASONS</a><div class="detail-hero-layout"><div>{eyebrow('2026–2027 / CURRENT SEASON')}<h1>BIO<span>BUZZ.</span></h1><p>A new season is underway. We’re here to experiment, make mistakes, learn fast, and turn what we discover into a machine ready for competition.</p><span class="pill detail-status"><span class="pulse"></span> WORK IN PROGRESS</span></div><div class="detail-illustration" aria-label="Abstract BIOBUZZ season artwork" role="img"><div class="honeycomb honey-1"></div><div class="honeycomb honey-2"></div><div class="honeycomb honey-3"></div><div class="honeycomb honey-4"></div><span>26<br><em>27</em></span></div></div></div></section><section class="section-block"><div class="container detail-overview"><div>{eyebrow('SEASON JOURNAL')}<h2>The next chapter<br>is being written.</h2></div><div class="readable"><p>BIOBUZZ is the 2026–27 FIRST Tech Challenge game. Our team’s robot, engineering process, and competition updates will take shape throughout the season.</p><p>We opened the East Bay League season with strong matches and a 118-point event-high alliance result. Explore the photos and highlights from our first meet below.</p><a class="source-link" href="https://ftc-resources.firstinspires.org/ftc/game" target="_blank" rel="noopener noreferrer">Official BIOBUZZ season resources {arrow_diag}</a></div></div></section><section class="section-block update-grid-wrap"><div class="container"><div class="section-row">{section_intro('WHAT WE’RE WORKING ON','The journey <em>ahead.</em>')}</div><div class="update-grid"><article><span>01 / ROBOT</span><h3>Design & build</h3><p>Robot photos, mechanisms, and engineering notes will be added as our design develops.</p></article><article><span>02 / SOFTWARE</span><h3>Code & control</h3><p>Look here for future programming highlights, automation work, and lessons learned.</p></article><article><span>03 / EVENTS</span><h3>Competition log</h3><p>Our first event, East Bay League Meet One, is featured below with photos and match highlights.</p></article></div></div></section>{event_preview}<div class="container next-season-link"><a href="/seasons/decode/"><span>PREVIOUS SEASON</span><strong>2025–26 / DECODE</strong>{arrow_diag}</a></div>'''
-page('BIOBUZZ · 2026–27','Follow the 2026–27 BIOBUZZ FTC season for Helios Team 5214, including future robot and event updates.', 'seasons',biobuzz,'/seasons/biobuzz/')
-
-decode=f'''<section class="season-detail-hero decode-detail"><div class="container"><a href="/seasons/" class="back-link">← ALL SEASONS</a><div class="detail-hero-layout"><div>{eyebrow('2025–2026 / SEASON RECAP')}<h1>DE<span>CODE.</span></h1><p>One season, four official events, and an award that recognized what we brought to the engineering table.</p><span class="pill detail-status">SEASON COMPLETE</span></div><div class="decode-illustration" aria-label="Decorative DECODE season artwork" role="img"><div class="decode-rings"></div><span>&lt;/5214&gt;</span></div></div></div></section><section class="season-stats"><div class="container season-stats-grid"><div><strong>11–7</strong><span>Official match record</span></div><div><strong>04</strong><span>Official events</span></div><div><strong>01</strong><span>Innovate Award</span></div></div></section><section class="section-block"><div class="container detail-overview"><div>{eyebrow('SEASON HIGHLIGHT')}<h2>Innovation,<br>recognized.</h2></div><div class="readable"><p>At the 2025–26 East Bay League Tournament, Team 5214 received the <strong>Innovate Award sponsored by RTX</strong>. The season included three East Bay league meets followed by the league tournament.</p><p>Our official FIRST record lists 11 wins and 7 losses across four official events, counting qualification and playoff matches.</p><a class="source-link" href="https://ftc-events.firstinspires.org/2025/team/5214" target="_blank" rel="noopener noreferrer">Verify DECODE results on FIRST {arrow_diag}</a></div></div></section><section class="section-block decode-events"><div class="container"><div class="section-row">{section_intro('COMPETITION LOG','The official <em>events.</em>')}</div><div class="event-list"><div><span>01</span><strong>East Bay League Meet 1</strong><small>November 9, 2025</small></div><div><span>02</span><strong>East Bay League Meet 2</strong><small>December 7, 2025</small></div><div><span>03</span><strong>East Bay League Meet 3</strong><small>January 18, 2026</small></div><div><span>04</span><strong>East Bay League Tournament <b>INNOVATE AWARD</b></strong><small>February 8, 2026</small></div></div><p class="archive-note">The August 2026 Lobster Cup was an off-season invitational and is separate from the four official season events.</p></div></section><div class="container next-season-link"><a href="/seasons/biobuzz/"><span>NEXT SEASON</span><strong>2026–27 / BIOBUZZ</strong>{arrow_diag}</a></div>'''
-page('DECODE · 2025–26','2025–26 DECODE FTC season recap for Helios Team 5214: Innovate Award, events, and verified FIRST results.', 'seasons',decode,'/seasons/decode/')
-
-contact=f'''<section class="page-hero page-hero--contact"><div class="container narrow-content">{eyebrow('SAY HELLO')}<h1>Let’s start a<br><em>conversation.</em></h1><p>Questions, collaborations, community events, or just want to talk robotics? We’d love to hear from you.</p></div></section><section class="section-block contact-section"><div class="container contact-grid"><div class="contact-form-wrap"><div class="contact-form-header"><span class="eyebrow">SEND US A NOTE</span><h2>Write to Helios.</h2><p>Send a message using the form below. It goes straight to our team inbox once email delivery is configured.</p></div><form id="contact-form" class="contact-form" novalidate><div class="form-row"><div class="form-field"><label for="contact-name">Your name <span>*</span></label><input id="contact-name" name="name" type="text" autocomplete="name" placeholder="Your full name" maxlength="120" required></div><div class="form-field"><label for="contact-email">Email address <span>*</span></label><input id="contact-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" required></div></div><div class="form-field"><label for="contact-subject">What’s this about? <span>*</span></label><select id="contact-subject" name="subject" required><option value="" selected disabled>Choose a topic</option><option>General inquiry</option><option>Outreach collaboration</option><option>Sponsorship or support</option><option>Competition or robotics</option><option>Other</option></select></div><div class="form-field"><label for="contact-message">Your message <span>*</span></label><textarea id="contact-message" name="message" placeholder="Tell us what’s on your mind..." rows="6" minlength="10" maxlength="5000" required></textarea></div><div class="hidden-field" aria-hidden="true"><label for="contact-company">Company website (leave blank)</label><input id="contact-company" name="company" type="text" tabindex="-1" autocomplete="off"></div><div id="form-feedback" class="form-feedback" aria-live="polite" role="status"></div><button class="button button--dark submit-button" type="submit"><span class="submit-label">Send message</span><span class="button-arrow">{arrow}</span></button></form></div><aside class="contact-sidebar"><div class="contact-side-block">{eyebrow('EMAIL US DIRECTLY')}<h3>Prefer your own<br>inbox?</h3><p>No problem. You can email us directly and we’ll get back to you as soon as we can.</p><a class="email-address" href="mailto:5214.helios@gmail.com">5214.helios@gmail.com {arrow_diag}</a></div><div class="contact-side-block instagram-block">{eyebrow('FOLLOW THE TEAM')}<h3>On Instagram.</h3><p>Photos, robot updates, and a closer look at our events.</p><a class="instagram-link" href="https://www.instagram.com/ftc5214helios/" target="_blank" rel="noopener noreferrer">@ftc5214helios {arrow_diag}</a></div><div class="contact-side-block contact-side-block--light"><span class="sidebar-icon">✳</span><h3>Where we’re based.</h3><p>Based at <a class="inline-school-link" href="{SCHOOL_URL}" target="_blank" rel="noopener noreferrer">The Quarry Lane School ↗</a><br>Dublin, California</p><a class="source-link" href="{TEAM_SOURCE}" target="_blank" rel="noopener noreferrer">See our FIRST profile {arrow_diag}</a></div></aside></div></section>'''
-page('Contact','Contact Helios FTC Team 5214 using our form or email 5214.helios@gmail.com for robotics collaborations and questions.', 'contact',contact,'/contact/')
-print('Generated',len(list(P.rglob('index.html'))),'pages')
+<section class="section" data-theme="dark"><div class="container">
+{section_head('Timeline')}
+<ol class="timeline" data-timeline><span class="tl-line" aria-hidden="true"><i></i></span>{timeline}</ol>
+</div></section>
+<section class="section" data-theme="light"><div class="container">
+{section_head('Who does what', 'The six groups on the team this season.')}
+<ul class="subteams">{subteams}</ul>
+<div class="cta-row">{btn('/team/', 'Meet the team', 'sun', attrs=' data-magnetic')}</div>
+</div></section>'''
+page('About', 'Helios is FTC Team 5214 from The Quarry Lane School in Dublin, California, competing in FIRST Tech Challenge since 2010.', 'about', about, '/about/')
 
 
-# BIOBUZZ East Bay League Meet One – team-provided photographs and match highlights.
-event_page="<section class=\"page-hero meet-detail-hero\"><div class=\"container\"><a class=\"back-link\" href=\"/seasons/biobuzz/\">← BIOBUZZ SEASON</a><div class=\"meet-detail-heading\"><span class=\"eyebrow\"><span class=\"eyebrow-dot\"></span>NOVEMBER 1, 2026 · QUARRY LANE SCHOOL · DUBLIN, CA</span><h1>East Bay League<br><em>Meet One.</em></h1><p>Our first East Bay League meet of the BIOBUZZ season was a strong start for Helios. The team put Eclipse to the test and helped set an event-high alliance score of <strong>118 points</strong>.</p></div></div></section>\n<section class=\"section-block meet-intro-section\"><div class=\"container meet-intro\"><div><span class=\"eyebrow\">MATCH HIGHLIGHTS</span><h2>Strong start.<br>Stronger together.</h2></div><div class=\"readable\"><p>Helios 5214 competed at East Bay League Meet One on November 1 at Quarry Lane School. Our team brought Eclipse onto the field, worked closely with alliance partners, and put up some great scores.</p><p>One highlight was <strong>Qualification 17</strong>, where our red alliance won <strong>118–49</strong>—the event-high score shown on the match display. In <strong>Qualification 9</strong>, Helios was on the winning blue alliance in a <strong>99–9</strong> match.</p><p>From preparing the robot to communicating during matches, the meet gave us a lot to build on for the rest of BIOBUZZ.</p><a class=\"source-link\" href=\"https://ftc-events.firstinspires.org/2026/USCANOEBM1\" target=\"_blank\" rel=\"noopener noreferrer\">View official FIRST event results ↗</a></div></div></section>\n<section class=\"section-block meet-gallery-section\" id=\"photos\"><div class=\"container\"><div class=\"meet-gallery-heading\"><span class=\"eyebrow\">PHOTO JOURNAL / 09 PHOTOS</span><h2>Behind the <em>matches.</em></h2><p>Photos from the team, robot pit, and competition. Select any image to open it at its full aspect ratio.</p></div><div class=\"meet-gallery-grid\"><figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-team-robot.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Helios at East Bay League Meet One\"><img src=\"/assets/meet1-team-robot.webp\" loading=\"eager\" alt=\"Helios at East Bay League Meet One\"></a><figcaption><strong>Helios at East Bay League Meet One</strong><span>The team gathered around Eclipse, our competition robot.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-score-118.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: 118 points on the board\"><img src=\"/assets/meet1-score-118.webp\" loading=\"lazy\" alt=\"118 points on the board\"></a><figcaption><strong>118 points on the board</strong><span>In Qualification 17, Helios was on the winning red alliance, 118–49.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-score-99.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Another strong qualification match\"><img src=\"/assets/meet1-score-99.webp\" loading=\"lazy\" alt=\"Another strong qualification match\"></a><figcaption><strong>Another strong qualification match</strong><span>Helios was on the blue alliance in a 99–9 win during Qualification 9.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-robot-workbench.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Eclipse, up close\"><img src=\"/assets/meet1-robot-workbench.webp\" loading=\"lazy\" alt=\"Eclipse, up close\"></a><figcaption><strong>Eclipse, up close</strong><span>A close-up of the robot's mechanisms before competition.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-robot-field.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Ready for the field\"><img src=\"/assets/meet1-robot-field.webp\" loading=\"lazy\" alt=\"Ready for the field\"></a><figcaption><strong>Ready for the field</strong><span>A look at Eclipse on the competition floor.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-team-hands.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: The team behind the robot\"><img src=\"/assets/meet1-team-hands.webp\" loading=\"lazy\" alt=\"The team behind the robot\"></a><figcaption><strong>The team behind the robot</strong><span>Helios members showing their team spirit at the event.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-robot-game.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Robot on the field\"><img src=\"/assets/meet1-robot-game.webp\" loading=\"lazy\" alt=\"Robot on the field\"></a><figcaption><strong>Robot on the field</strong><span>Eclipse navigating the field during the meet.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-robot-match.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Competition in action\"><img src=\"/assets/meet1-robot-match.webp\" loading=\"lazy\" alt=\"Competition in action\"></a><figcaption><strong>Competition in action</strong><span>Eclipse near the game elements during a match.</span></figcaption></figure>\n<figure class=\"meet-gallery-item\"><a href=\"/assets/meet1-teammates-strategy.webp\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open full photo: Working through the match\"><img src=\"/assets/meet1-teammates-strategy.webp\" loading=\"lazy\" alt=\"Working through the match\"></a><figcaption><strong>Working through the match</strong><span>Team members communicating during the meet.</span></figcaption></figure></div></div></section>\n<div class=\"container next-season-link\"><a href=\"/seasons/biobuzz/\"><span>BACK TO THE SEASON</span><strong>2026–27 / BIOBUZZ</strong><span aria-hidden=\"true\">↗</span></a></div>"
-page('East Bay League Meet One','Helios FTC 5214 at East Bay League Meet One, November 1, 2026. Team photos and 118-point match highlight.','seasons',event_page,'/seasons/biobuzz/east-bay-meet-one/')
+# ================================================================ TEAM
+def member_card(name, role, initials):
+    return (f'<li class="member" data-tilt><div class="member-face" role="img" aria-label="Photo coming soon for {name}">'
+            f'<span class="member-initials" aria-hidden="true">{initials}</span><span class="member-rays" aria-hidden="true"></span></div>'
+            f'<div class="member-meta"><h3>{name}</h3><p>{role}</p></div></li>')
+
+
+divisions = ''.join(
+    f'<section class="division" aria-labelledby="div-{n}"><div class="division-head"><h2 id="div-{n}">{division}</h2><p>{sub}</p></div>'
+    f'<ul class="members">{"".join(member_card(nm, rl, ini) for nm, rl, ini in people)}</ul></section>'
+    for n, (division, sub, people) in enumerate(team_groups, start=1))
+team = page_hero('The team', '11 students and 4 mentors for the 2026–27 season.', 'Helios 2026–27',
+                 extra=img_reveal('/assets/meet1-team-robot.webp', 1024, 768, 'Helios team members with Eclipse at East Bay League Meet One', 'page-hero-img', 'eager')) + f'''
+<section class="section" data-theme="light"><div class="container">{divisions}<p class="small-note">Photos coming soon.</p></div></section>'''
+page('Team', 'Meet the 2026–27 Helios FTC 5214 team: leadership, software, hardware, electrical, design, business, outreach, drive team and mentors.', 'team', team, '/team/')
+
+# ================================================================ OUTREACH
+outreach_photos = [
+    ('lakeside-team-presentation.webp', 1050, 433, 'Helios members talking about robotics at Lakeside', 'Talking about how we build the robot'),
+    ('lakeside-programming-group.webp', 2048, 1134, 'Helios members with the robot during the programming activity', 'The programming activity'),
+    ('lakeside-intellikits-demo.webp', 958, 900, 'A Helios member holding an IntelliKits model', 'Showing how the model works'),
+    ('lakeside-kit-parts.webp', 993, 900, 'IntelliKits parts on a table', 'Parts from one of our kits'),
+    ('intellikits-rubber-band-car.webp', 631, 581, 'A blue rubber-band-powered model car', 'A finished rubber band car'),
+]
+photo_grid = ''.join(f'<figure class="photo-card"><div class="photo-card-img" data-reveal-img><div class="reveal-img-inner"><img src="/assets/{f}" width="{w}" height="{h}" loading="lazy" decoding="async" alt="{a}"></div></div><figcaption>{c}</figcaption></figure>' for f, w, h, a, c in outreach_photos)
+outreach = page_hero('Outreach', 'We run hands-on STEM events for younger kids.', 'Community') + f'''
+<section class="section" data-theme="light" id="lakeside-2026"><div class="container">
+<div class="story">
+<div class="story-copy">
+<p class="page-meta">October 16, 2026 · Concord, CA</p>
+<h2 class="h2" data-split>{split('IntelliKits at *Lakeside*')}</h2>
+<div class="prose">
+<p>We ran a STEM event for kids in the youth program at the Lakeside Apartments community center in Concord.</p>
+<p>First we showed them our competition robot and explained how we designed and programmed it. Then the kids tried a programming activity and built model cars from our IntelliKits.</p>
+<p>IntelliKits are simple engineering kits we put together so kids can build something themselves. We want more kids to get to try robotics, especially in places where programs and equipment are harder to find.</p>
+</div>
+</div>
+{img_reveal('/assets/lakeside-team-workshop.webp', 1050, 551, 'Helios members showing engineering models at the Lakeside community center', 'story-photo', 'eager', '0.06')}
+</div>
+<div class="photo-grid">{photo_grid}</div>
+</div></section>
+<section class="section callout-sec" data-theme="dark"><div class="container callout">
+<h2 class="h2" data-split>{split('Want us at your event?')}</h2>
+<p>We can bring the robot and a set of IntelliKits to schools, libraries and community centers. Email us and tell us about your event.</p>
+{btn('/contact/', 'Contact us', 'sun', attrs=' data-magnetic')}
+</div></section>'''
+page('Outreach', 'Helios FTC 5214 brought our robot, a programming activity and IntelliKits to kids at the Lakeside community center in Concord.', 'outreach', outreach, '/outreach/')
+
+# ================================================================ SEASONS
+archive = ''.join(f'<li><a href="{url}"{EXT}><span class="arc-year">{year}</span><strong>{name}</strong><span class="arc-tag">FIRST results</span>{arrow_diag}</a></li>' for year, name, url in seasons[2:])
+seasons_page = page_hero('Seasons', 'We’ve competed in FTC since 2010. Here’s this season, last season, and our official results from earlier years.', '16 seasons') + f'''
+<section class="section" data-theme="light"><div class="container">
+<div class="season-cards">
+<a class="season-card" href="/seasons/biobuzz/"><div class="season-card-img">{xray('xray--card', 'Rendering of Eclipse')}</div><div class="season-card-body"><span>2026–27 · This season</span><h2>BIOBUZZ</h2><p>Our robot is Eclipse. Updates through the season.</p></div></a>
+<a class="season-card season-card--award" href="/seasons/decode/"><div class="season-card-img award"><span>East Bay League Tournament</span><strong>Innovate Award</strong><span>February 8, 2026</span></div><div class="season-card-body"><span>2025–26 · Last season</span><h2>DECODE</h2><p>11–7 across four official events.</p></div></a>
+</div></div></section>
+<section class="section" data-theme="dark"><div class="container">
+{section_head('Earlier seasons', 'These link to our official results on the FIRST events site. Some older records list the team under a previous name.')}
+<ul class="archive">{archive}</ul>
+</div></section>'''
+page('Seasons', 'Helios FTC Team 5214 seasons: 2026–27 BIOBUZZ, 2025–26 DECODE, and official FIRST results from earlier years.', 'seasons', seasons_page, '/seasons/')
+
+# ================================================================ BIOBUZZ
+back_seasons = f'<a href="/seasons/" class="back-link">{arrow_back}<span>All seasons</span></a>'
+biobuzz = page_hero('BIOBUZZ', 'BIOBUZZ is this year’s FTC game. Our robot is Eclipse, and we’ll post updates here as the season goes on.', '2026–27 season', top=back_seasons, cls='page-hero--season') + f'''
+<section class="section robot-sec" data-theme="dark"><div class="container">
+<div class="robot-head"><h2 class="h2" data-split>{split('Eclipse')}</h2><p>Hover over the robot, or tap the button, to see the CAD.</p></div>
+<div class="robot-stage">{xray('xray--dark', 'Rendering of Eclipse')}<button class="xray-toggle xray-toggle--dark" type="button" data-xray-toggle aria-pressed="false">{xray_icon}<span class="xray-toggle-text" data-on="Show the robot" data-off="Show the CAD">Show the CAD</span></button></div>
+</div></section>
+<section class="section" data-theme="light"><div class="container">
+{section_head('Events', 'East Bay League meets this season.', tlink('https://ftc-resources.firstinspires.org/ftc/game', 'Official game info', True))}
+<a class="event-card" href="{MEET1}">
+{img_reveal('/assets/meet1-team-robot.webp', 1024, 768, 'Helios team members with Eclipse at East Bay League Meet One', 'event-card-img')}
+<div class="event-card-body"><p class="page-meta">November 1, 2026 · Dublin, CA</p><h3>East Bay League Meet One</h3><p>Our first meet of the season. In Qualification 17 our alliance scored 118, the high score of the event.</p><span class="tlink"><span>Photos and results</span>{arrow}</span></div>
+</a>
+</div></section>
+<div class="container next-wrap"><a class="next-link" href="/seasons/decode/"><span>Last season</span><strong>DECODE</strong>{arrow}</a></div>'''
+page('BIOBUZZ 2026–27', 'Helios FTC 5214 in the 2026–27 BIOBUZZ season: our robot Eclipse and our event results.', 'seasons', biobuzz, '/seasons/biobuzz/')
+
+# ================================================================ DECODE
+decode_events = [('East Bay League Meet 1', 'November 9, 2025', ''), ('East Bay League Meet 2', 'December 7, 2025', ''), ('East Bay League Meet 3', 'January 18, 2026', ''), ('East Bay League Tournament', 'February 8, 2026', 'Innovate Award')]
+event_rows = ''.join(f'<li><span class="ev-num">{i + 1}</span><strong>{n}</strong>{"<b class=" + chr(34) + "award" + chr(34) + ">" + a + "</b>" if a else ""}<span class="ev-date">{d}</span></li>' for i, (n, d, a) in enumerate(decode_events))
+decode = page_hero('DECODE', 'We finished DECODE 11–7 across four official events and won the Innovate Award, sponsored by RTX, at the East Bay League Tournament.', '2025–26 season', top=back_seasons, cls='page-hero--season') + f'''
+<section class="stat-band" data-theme="dark"><div class="container stat-grid">
+<div><strong>11–7</strong><span>Official match record</span></div><div><strong data-count="4">4</strong><span>Official events</span></div><div><strong data-count="1">1</strong><span>Innovate Award</span></div>
+</div></section>
+<section class="section" data-theme="light"><div class="container">
+{section_head('Events', 'Three East Bay League meets, then the league tournament.', tlink('https://ftc-events.firstinspires.org/2025/team/5214', 'Results on FIRST', True))}
+<ol class="events">{event_rows}</ol>
+<p class="small-note">We also played the Lobster Cup in August 2026. It was an off-season event, so it isn’t counted here.</p>
+</div></section>
+<div class="container next-wrap"><a class="next-link" href="/seasons/biobuzz/"><span>This season</span><strong>BIOBUZZ</strong>{arrow}</a></div>'''
+page('DECODE 2025–26', 'Helios FTC 5214 in the 2025–26 DECODE season: 11–7 record, four official events and the Innovate Award.', 'seasons', decode, '/seasons/decode/')
+
+# ================================================================ CONTACT
+topics = ['General inquiry', 'Outreach collaboration', 'Sponsorship or support', 'Competition or robotics', 'Other']
+topic_pills = ''.join(f'<label class="pill"><input type="radio" name="subject" value="{t}"{" required" if i == 0 else ""}><span>{t}</span></label>' for i, t in enumerate(topics))
+contact = f'''<section class="contact-hero" data-theme="light"><div class="container">
+<h1 class="page-title" data-split>{split('Contact')}</h1>
+<div class="contact-grid">
+<div class="contact-info">
+<p class="page-lead">Questions about the team, sponsorship or outreach? Email us or send a message with the form.</p>
+<div class="contact-cards">
+<div class="contact-card contact-card--dark"><span class="contact-label">Email</span><a class="contact-big" href="mailto:{EMAIL}">{EMAIL}</a><button class="copy-btn" type="button" data-copy="{EMAIL}">{copy_icon}<span>Copy</span></button></div>
+<div class="contact-card"><span class="contact-label">Instagram</span><a class="contact-big" href="{INSTAGRAM}"{EXT}>@ftc5214helios</a></div>
+<div class="contact-card"><span class="contact-label">Where we are</span><p>{school_link()}<br>Dublin, California</p></div>
+</div>
+</div>
+<form id="contact-form" class="contact-form" novalidate>
+<h2 class="form-title">Send a message</h2>
+<fieldset class="form-field"><legend>What’s it about? <span>*</span></legend><div class="pills">{topic_pills}</div></fieldset>
+<div class="form-row"><div class="form-field"><label for="contact-name">Name <span>*</span></label><input id="contact-name" name="name" type="text" autocomplete="name" maxlength="120" required></div>
+<div class="form-field"><label for="contact-email">Email <span>*</span></label><input id="contact-email" name="email" type="email" autocomplete="email" maxlength="200" required></div></div>
+<div class="form-field"><label for="contact-message">Message <span>*</span></label><textarea id="contact-message" name="message" rows="6" minlength="10" maxlength="5000" required></textarea></div>
+<div class="hidden-field" aria-hidden="true"><label for="contact-company">Company website (leave blank)</label><input id="contact-company" name="company" type="text" tabindex="-1" autocomplete="off"></div>
+<div id="form-feedback" class="form-feedback" aria-live="polite" role="status"></div>
+<button class="btn btn--sun submit-button" type="submit"><span class="btn-label"><span class="submit-label">Send message</span><span aria-hidden="true">Send message</span></span><span class="btn-icon">{arrow}</span></button>
+</form>
+</div></div></section>'''
+page('Contact', f'Contact Helios FTC Team 5214. Email {EMAIL} or send us a message.', 'contact', contact, '/contact/')
+
+# ================================================================ EAST BAY LEAGUE MEET ONE
+meet_photos = [
+    ('meet1-team-robot.webp', 1024, 768, 'The team with Eclipse', 'The team gathered around Eclipse before matches.'),
+    ('meet1-score-118.webp', 1024, 768, '118 to 49', 'Qualification 17. We were on the red alliance.'),
+    ('meet1-score-99.webp', 1024, 768, '99 to 9', 'Qualification 9. We were on the blue alliance.'),
+    ('meet1-robot-workbench.webp', 1680, 1120, 'Eclipse in the pits', 'A close look at the robot before competing.'),
+    ('meet1-robot-field.webp', 1120, 1680, 'Ready for a match', 'Eclipse on the competition floor.'),
+    ('meet1-team-hands.webp', 1680, 1120, 'Between matches', 'Team members at the event.'),
+    ('meet1-robot-game.webp', 1680, 1120, 'On the field', 'Eclipse during a match.'),
+    ('meet1-robot-match.webp', 1680, 1120, 'Near the game elements', 'Eclipse lining up during a match.'),
+    ('meet1-teammates-strategy.webp', 1120, 1680, 'Planning', 'Talking strategy beside the field.'),
+]
+gallery = ''.join(
+    f'<figure class="gallery-item"><a href="/assets/{f}" target="_blank" rel="noopener noreferrer" data-lightbox-item aria-label="Open full photo: {t}">'
+    f'<img src="/assets/{f}" width="{w}" height="{h}" {"loading=" + chr(34) + "eager" + chr(34) if i == 0 else "loading=" + chr(34) + "lazy" + chr(34)} decoding="async" alt="{t}"><span class="gallery-zoom">{expand}</span></a>'
+    f'<figcaption><strong>{t}</strong><span>{c}</span></figcaption></figure>'
+    for i, (f, w, h, t, c) in enumerate(meet_photos))
+back_biobuzz = f'<a class="back-link" href="/seasons/biobuzz/">{arrow_back}<span>BIOBUZZ season</span></a>'
+event_page = page_hero('Meet One', 'Our first East Bay League meet of BIOBUZZ. In Qualification 17 our red alliance won 118 to 49, the highest score at the event.', 'November 1, 2026 · Quarry Lane School, Dublin, CA', top=back_biobuzz) + f'''
+<section class="section" data-theme="dark"><div class="container">
+<div class="scores">
+<div class="score score--red"><span>Qualification 17 · Red alliance</span><strong data-count="118">118</strong><em>to 49</em></div>
+<div class="score score--blue"><span>Qualification 9 · Blue alliance</span><strong data-count="99">99</strong><em>to 9</em></div>
+</div>
+<p class="scores-note">Both were wins. {tlink('https://ftc-events.firstinspires.org/2026/USCANOEBM1', 'Full results on FIRST', True)}</p>
+</div></section>
+<section class="section" data-theme="light" id="photos"><div class="container">
+{section_head('Photos', 'Select any photo to see it full size.')}
+<div class="gallery" data-lightbox>{gallery}</div>
+</div></section>
+<div class="container next-wrap"><a class="next-link" href="/seasons/biobuzz/"><span>Back to</span><strong>BIOBUZZ</strong>{arrow}</a></div>'''
+page('East Bay League Meet One', 'Helios FTC 5214 at East Bay League Meet One on November 1, 2026: photos and our 118-point match.', 'seasons', event_page, MEET1)
+
+print('Generated', len(list(P.rglob('index.html'))), 'pages')

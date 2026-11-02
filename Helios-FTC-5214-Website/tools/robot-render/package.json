@@ -1,0 +1,8 @@
+{
+  "name": "helios-robot-render",
+  "private": true,
+  "description": "Renders the Helios robot from an Onshape glTF export for the website",
+  "dependencies": {
+    "three": "0.170.0"
+  }
+}

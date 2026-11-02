@@ -1,0 +1,244 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>render</title>
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+const S = window.RENDER = {};
+let renderer, model, beautyScene, skelScene, skelLightScene, camera, center, radius, ground, keyLight, sizeBox;
+
+S.init = async (opts) => {
+  const { url, width, height, upAxis = 'y' } = opts;
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(width, height);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = opts.exposure ?? 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  // ---------- load
+  let root;
+  if (url.endsWith('.glb') || url.endsWith('.gltf')) {
+    const g = await new GLTFLoader().loadAsync(url);
+    root = g.scene;
+  } else if (url.endsWith('.stl')) {
+    const geo = await new STLLoader().loadAsync(url);
+    root = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x9a9a9a, metalness: .5, roughness: .4 }));
+  } else if (url.endsWith('.obj')) {
+    root = await new OBJLoader().loadAsync(url);
+  } else if (url === 'TEST') {
+    root = testRobot();
+  }
+  if (upAxis === 'z') root.rotation.x = -Math.PI / 2;
+  root.updateMatrixWorld(true);
+  if (opts.simplifyRollers) {
+    // mecanum rollers are exported with ~800k triangles each; swap each for a smooth barrel
+    const rollers = [];
+    root.traverse(o => { if (/^Roller__Roller/.test(o.name || '') && !o.isMesh) rollers.push(o); });
+    rollers.forEach(node => {
+      const inv = new THREE.Matrix4().copy(node.matrixWorld).invert();
+      const bb = new THREE.Box3(); let mat = null;
+      node.traverse(c => { if (!c.isMesh) return; if (!mat) mat = c.material; const g = c.geometry; if (!g.boundingBox) g.computeBoundingBox();
+        const m = new THREE.Matrix4().multiplyMatrices(inv, c.matrixWorld); bb.union(g.boundingBox.clone().applyMatrix4(m)); });
+      if (bb.isEmpty()) return;
+      const sz = bb.getSize(new THREE.Vector3()), ctr = bb.getCenter(new THREE.Vector3());
+      const axis = sz.x >= sz.y && sz.x >= sz.z ? 'x' : sz.y >= sz.z ? 'y' : 'z';
+      const L = sz[axis], R = Math.max(...['x', 'y', 'z'].filter(a => a !== axis).map(a => sz[a])) / 2;
+      const pts = []; for (let i = 0; i <= 16; i++) { const t = i / 16 - 0.5; pts.push(new THREE.Vector2(R * (0.62 + 0.38 * Math.cos(t * Math.PI)), t * L)); }
+      const geo = new THREE.LatheGeometry(pts, 28);
+      if (axis === 'x') geo.rotateZ(Math.PI / 2); else if (axis === 'z') geo.rotateX(Math.PI / 2);
+      geo.translate(ctr.x, ctr.y, ctr.z);
+      [...node.children].forEach(c => node.remove(c));
+      node.add(new THREE.Mesh(geo, mat));
+    });
+    root.updateMatrixWorld(true);
+  }
+  if (opts.minPart) {
+    const kill = [];
+    root.traverse(o => { if (!o.isMesh) return; const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere(); const sc = new THREE.Vector3(); o.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc); if (g.boundingSphere.radius * 2 * Math.abs(sc.x) < opts.minPart) kill.push(o); });
+    kill.forEach(o => o.parent.remove(o));
+  }
+  if (opts.srgbColors) {
+    const seen = new Set();
+    root.traverse(o => { if (!o.isMesh) return; const ms = Array.isArray(o.material) ? o.material : [o.material]; ms.forEach(m => { if (seen.has(m)) return; seen.add(m);
+      m.color.convertSRGBToLinear();
+      const c = m.color, grey = Math.abs(c.r - c.g) < 0.02 && Math.abs(c.g - c.b) < 0.02;
+      m.metalness = grey && c.r > 0.15 ? 0.55 : 0.05; m.roughness = grey ? 0.42 : 0.55; }); });
+  }
+  if (opts.merge) {
+    const groups = new Map();
+    root.traverse(o => { if (!o.isMesh || !o.visible) return; const k = o.material.uuid; if (!groups.has(k)) groups.set(k, { mat: o.material, geos: [] });
+      const g = o.geometry.index ? o.geometry : o.geometry; const gc = new THREE.BufferGeometry(); gc.setAttribute('position', g.attributes.position); if (g.attributes.normal) gc.setAttribute('normal', g.attributes.normal); if (g.index) gc.setIndex(g.index);
+      const w = gc.clone(); w.applyMatrix4(o.matrixWorld); groups.get(k).geos.push(w.index ? w.toNonIndexed() : w); });
+    const merged = new THREE.Group();
+    groups.forEach(({ mat, geos }) => { const m = BufferGeometryUtils.mergeGeometries(geos, false); if (!m.attributes.normal) m.computeVertexNormals(); const mesh = new THREE.Mesh(m, mat); mesh.name = 'merged'; merged.add(mesh); });
+    root = merged; root.updateMatrixWorld(true);
+  }
+  const hide = opts.hide || [];
+  const cands = [];
+  root.traverse(o => { if (!o.isMesh) return; const b = new THREE.Box3().setFromObject(o); const sz = b.getSize(new THREE.Vector3());
+    const mx = Math.max(sz.x, sz.y, sz.z), mn = Math.min(sz.x, sz.y, sz.z);
+    if (mx > 0.08 && mn / mx > 0.85) cands.push([o.name, sz.toArray().map(v => +v.toFixed(3)), b.getCenter(new THREE.Vector3()).toArray().map(v => +v.toFixed(3))]);
+    if (hide.includes(o.name)) o.visible = false; });
+  S.cands = cands;
+  model = new THREE.Group(); model.add(root);
+  model.updateMatrixWorld(true);
+  const visBox = (obj) => { const bb = new THREE.Box3(); obj.traverse(o => { if (o.isMesh && o.visible) bb.union(new THREE.Box3().setFromObject(o)); }); return bb; };
+  const box = visBox(model);
+  sizeBox = box.getSize(new THREE.Vector3());
+  const c = box.getCenter(new THREE.Vector3());
+  root.position.sub(new THREE.Vector3(c.x, box.min.y, c.z));
+  model.updateMatrixWorld(true);
+  const box2 = visBox(model);
+  center = box2.getCenter(new THREE.Vector3());
+  radius = box2.getBoundingSphere(new THREE.Sphere()).radius;
+
+  let meshes = 0, tris = 0; const mats = new Map();
+  model.traverse(o => { if (o.isMesh) { meshes++; tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; const m = o.material; const k = m.name + '|' + (m.color ? m.color.getHexString() : ''); mats.set(k, (mats.get(k) || 0) + 1); } });
+  S.stats = { cands: S.cands, meshes, tris: Math.round(tris), size: sizeBox.toArray().map(v => +v.toFixed(3)), mats: [...mats.entries()].slice(0, 60) };
+  return S.stats;
+};
+
+S.setupBeauty = (opts = {}) => {
+  beautyScene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  beautyScene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  beautyScene.environmentIntensity = opts.envIntensity ?? 0.9;
+  const m = model.clone(true);
+  m.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.receiveShadow = true;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach(mt => { if (opts.tweak) opts.tweak(mt, o); mt.side = THREE.DoubleSide; mt.needsUpdate = true; });
+    if (opts.tweakFn) new Function('mt', 'o', 'THREE', opts.tweakFn)(o.material, o, THREE);
+  });
+  beautyScene.add(m);
+  // lights
+  keyLight = new THREE.DirectionalLight(0xfff3e6, opts.key ?? 2.6);
+  keyLight.position.set(center.x + radius * 1.4, center.y + radius * 2.4, center.z + radius * 1.1);
+  keyLight.target.position.copy(center);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(4096, 4096);
+  const sc = keyLight.shadow.camera; const r = radius * 1.6;
+  sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 0.01; sc.far = radius * 8;
+  keyLight.shadow.bias = -0.0002; keyLight.shadow.normalBias = radius * 0.004; keyLight.shadow.radius = 6;
+  beautyScene.add(keyLight, keyLight.target);
+  const fill = new THREE.DirectionalLight(0xdfe8ff, opts.fill ?? 0.7); fill.position.set(center.x - radius * 2, center.y + radius, center.z + radius * 1.5); beautyScene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffd29a, opts.rim ?? 1.6); rim.position.set(center.x - radius * .6, center.y + radius * 1.2, center.z - radius * 2.4); beautyScene.add(rim);
+  beautyScene.add(new THREE.HemisphereLight(0xffffff, 0x8a7f72, opts.hemi ?? 0.35));
+  // shadow catcher
+  ground = new THREE.Mesh(new THREE.PlaneGeometry(radius * 10, radius * 10), new THREE.ShadowMaterial({ opacity: opts.shadowOpacity ?? 0.28 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = 0; ground.receiveShadow = true;
+  beautyScene.add(ground);
+  S.beautyModel = m;
+};
+
+S.setupSkeleton = (opts = {}) => {
+  skelScene = new THREE.Scene();
+  const bg = new THREE.Color(opts.bg ?? 0x0e0c0b);
+  skelScene.background = bg;
+  skelScene.fog = new THREE.Fog(bg, opts.fogNear ?? radius * 1.8, opts.fogFar ?? radius * 4.6);
+  const lineMat = new LineMaterial({ color: opts.lineColor ?? 0xf6a32c, linewidth: opts.linewidth ?? 1.4, worldUnits: false, transparent: true, opacity: opts.lineOpacity ?? 0.95, depthTest: !!opts.depthTest, fog: true });
+  lineMat.resolution.set(opts.width, opts.height);
+  const faceMat = new THREE.MeshBasicMaterial({ color: opts.faceColor ?? 0xf6a32c, transparent: true, opacity: opts.faceOpacity ?? 0.035, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true });
+  const m = model.clone(true);
+  m.updateMatrixWorld(true);
+  const segs = [];
+  const cache = S.edgeCache || (S.edgeCache = new Map());
+  m.traverse(o => {
+    if (!o.isMesh || !o.visible) return;
+    let base = cache.get(o.geometry.uuid);
+    if (!base) { base = new THREE.EdgesGeometry(o.geometry, opts.threshold ?? 28); cache.set(o.geometry.uuid, base); }
+    const eg = base.clone();
+    eg.applyMatrix4(o.matrixWorld);
+    segs.push(eg);
+    const face = new THREE.Mesh(o.geometry, faceMat); face.matrixAutoUpdate = false; face.matrix.copy(o.matrixWorld);
+    skelScene.add(face);
+  });
+  const merged = BufferGeometryUtils.mergeGeometries(segs, false);
+  const lg = new LineSegmentsGeometry().setPositions(merged.attributes.position.array);
+  const lines = new LineSegments2(lg, lineMat); lines.computeLineDistances();
+  skelScene.add(lines);
+  S.lineMat = lineMat; S.fogNearK = opts.fogNearK; S.fogFarK = opts.fogFarK;
+  return { segments: merged.attributes.position.count / 2 };
+};
+
+S.setupSkeletonLight = (opts = {}) => {
+  skelLightScene = new THREE.Scene();
+  const fogC = new THREE.Color(opts.fogColor ?? 0xf2f0eb);
+  skelLightScene.fog = new THREE.Fog(fogC, 1, 2);
+  const lineMat = new LineMaterial({ color: opts.lineColor ?? 0x2a2420, linewidth: opts.linewidth ?? 1.2, worldUnits: false, transparent: true, opacity: opts.lineOpacity ?? 0.9, depthTest: false, fog: true });
+  lineMat.resolution.set(opts.width, opts.height);
+  const m = model.clone(true);
+  m.updateMatrixWorld(true);
+  const segs = [];
+  const cache = S.edgeCache || (S.edgeCache = new Map());
+  m.traverse(o => { if (!o.isMesh || !o.visible) return; let base = cache.get(o.geometry.uuid); if (!base) { base = new THREE.EdgesGeometry(o.geometry, opts.threshold ?? 28); cache.set(o.geometry.uuid, base); } const eg = base.clone(); eg.applyMatrix4(o.matrixWorld); segs.push(eg); });
+  const merged = BufferGeometryUtils.mergeGeometries(segs, false);
+  const lg = new LineSegmentsGeometry().setPositions(merged.attributes.position.array);
+  const lines = new LineSegments2(lg, lineMat); lines.computeLineDistances();
+  skelLightScene.add(lines);
+  S.lightFogNearK = opts.fogNearK; S.lightFogFarK = opts.fogFarK;
+  return { segments: merged.attributes.position.count / 2 };
+};
+
+S.setCamera = ({ az = 35, el = 22, fov = 30, fill = 0.82, width, height, lookYOffset = 0, dist }) => {
+  const aspect = width / height;
+  camera = new THREE.PerspectiveCamera(fov, aspect, radius * 0.05, radius * 40);
+  const vfov = THREE.MathUtils.degToRad(fov);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+  const d = dist ?? (radius / Math.sin(Math.min(vfov, hfov) / 2)) / fill;
+  const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
+  const target = center.clone(); target.y += lookYOffset * radius;
+  camera.position.set(target.x + d * Math.cos(e) * Math.sin(a), target.y + d * Math.sin(e), target.z + d * Math.cos(e) * Math.cos(a));
+  camera.lookAt(target);
+  S.camDist = d;
+  if (skelScene && skelScene.fog) { skelScene.fog.near = d - radius * (S.fogNearK ?? 0.9); skelScene.fog.far = d + radius * (S.fogFarK ?? 1.9); }
+  if (skelLightScene && skelLightScene.fog) { skelLightScene.fog.near = d - radius * (S.lightFogNearK ?? 0.6); skelLightScene.fog.far = d + radius * (S.lightFogFarK ?? 2.4); }
+  return d;
+};
+
+S.render = (mode) => {
+  if (mode === 'beauty') { renderer.setClearColor(0x000000, 0); renderer.render(beautyScene, camera); }
+  else if (mode === 'skeleton-light') { renderer.setClearColor(0x000000, 0); renderer.render(skelLightScene, camera); }
+  else { renderer.setClearColor(0x0e0c0b, 1); renderer.render(skelScene, camera); }
+  return renderer.domElement.toDataURL('image/png');
+};
+
+// keep the key light fixed relative to the camera so every turntable frame is lit the same way
+S.orbitLights = (az) => {
+  const a = THREE.MathUtils.degToRad(az + 40);
+  keyLight.position.set(center.x + radius * 1.8 * Math.sin(a), center.y + radius * 2.4, center.z + radius * 1.8 * Math.cos(a));
+};
+
+function testRobot() {
+  const g = new THREE.Group();
+  const alu = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .8, roughness: .35 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: .2, roughness: .6 });
+  const yellow = new THREE.MeshStandardMaterial({ color: 0xf2c218, metalness: .1, roughness: .5 });
+  const wood = new THREE.MeshStandardMaterial({ color: 0xc89b6a, metalness: 0, roughness: .8 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.38), alu); base.position.y = 0.06; g.add(base);
+  for (const sx of [-1, 1]) {
+    const side = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.12, 0.38), black); side.position.set(sx * 0.2, 0.12, 0); g.add(side);
+    for (const sz of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.04, 24), black); w.rotation.z = Math.PI / 2; w.position.set(sx * 0.23, 0.052, sz * 0.14); g.add(w); }
+  }
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.24), wood); top.position.set(0, 0.24, -0.04); g.add(top);
+  const fly = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.18, 32), black); fly.rotation.z = Math.PI / 2; fly.position.set(0, 0.3, -0.04); g.add(fly);
+  const bump = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.34, 24), yellow); bump.rotation.z = Math.PI / 2; bump.position.set(0, 0.09, 0.2); g.add(bump);
+  return g;
+}
+S.ready = true;
+</script></body></html>

@@ -1,0 +1,9 @@
+node_modules/
+three
+out/
+*.glb
+*.gltf
+*.bin
+*.stl
+*.step
+*.stp
