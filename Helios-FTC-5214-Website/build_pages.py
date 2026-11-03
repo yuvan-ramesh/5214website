@@ -43,9 +43,9 @@ seasons = [
 team_groups = [
     ['Leadership', 'Runs the team', [['Bryan Pan', 'Captain', 'BP']]],
     ['Software', 'Programs the robot', [['Yuvan Ramesh', 'Software Lead', 'YR'], ['Azaan Raza', 'Software Member', 'AR']]],
-    ['Hardware, Electrical & Design', 'Designs, wires, builds and fixes the robot', [['Arhaan Reddy', 'Hardware Lead', 'AR'], ['Rishi Mamdur', 'Electrical Lead', 'RM'], ['Neel Gupta', 'Design Lead', 'NG'], ['Nyles Han', 'Hardware Member', 'NH']]],
+    ['Hardware, Electrical & Design', 'Designs, wires, builds and fixes the robot', [['Arhaan Reddy', 'Hardware Member', 'AR'], ['Rishi Mamdur', 'Electrical Lead', 'RM'], ['Neel Gupta', 'Design Lead', 'NG'], ['Nyles Han', 'Hardware Member', 'NH']]],
     ['Business, Outreach & Media', 'Handles business, outreach events and media', [['Elan Jain', 'Business Lead', 'EJ'], ['Kaveesh Chaturvedi', 'Media Lead', 'KC']]],
-    ['Drive Team', 'Drives in matches and plans strategy', [['Damodar Kriplani', 'Driver', 'DK'], ['Ronav Gupta', 'Drive Coach / Youth Mentor', 'RG']]],
+    ['Drive Team', 'Drives in matches and plans strategy', [['Damodar Kriplani', 'Driver & Fabrication Lead', 'DK'], ['Ronav Gupta', 'Drive Coach / Youth Mentor', 'RG']]],
     ['Mentors', 'Help and advise the team', [['Lina Tannous', 'Mentor', 'LT'], ['Leon Cox', 'Mentor', 'LC'], ['Ramana Cherukuri', 'Mentor', 'RC']]],
 ]
 
