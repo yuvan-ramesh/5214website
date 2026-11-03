@@ -329,7 +329,8 @@ html.is-ready .hero-text { transition-delay: .35s; }
 html.is-ready .hero-actions { transition-delay: .45s; }
 html.is-ready .hero-side { transition-delay: .55s; }
 /* the hero sits on night so the cut-out photo of Eclipse blends in */
-.hero[data-theme="dark"] .hero-word { color: rgba(242, 240, 235, .055); }
+.hero[data-theme="dark"] .hero-word { font-size: clamp(88px, 21.5vw, 460px); color: transparent; background: linear-gradient(180deg, rgba(246, 163, 44, .42) 0%, rgba(246, 163, 44, .16) 55%, rgba(246, 163, 44, .03) 100%); -webkit-background-clip: text; background-clip: text; }
+.hero[data-theme="dark"] .hero-word--outline { z-index: 3; background: none; -webkit-text-stroke: 1.5px rgba(246, 163, 44, .55); }
 .hero[data-theme="dark"] .hero-rings i { border-color: var(--on-night-line); }
 .hero[data-theme="dark"] .hero-text { color: var(--on-night-mute); }
 .hero[data-theme="dark"] .latest { background: var(--night-2); }

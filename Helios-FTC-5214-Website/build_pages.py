@@ -50,6 +50,15 @@ team_groups = [
 ]
 
 
+
+def is_lead(role):
+    return role == 'Captain' or 'Lead' in role
+
+
+# leads before members inside every group
+for _g in team_groups:
+    _g[2].sort(key=lambda p: not is_lead(p[1]))
+
 # ---------------------------------------------------------------- svg assets
 def _svg(path, cls):
     s = (A / path).read_text(encoding='utf-8')
@@ -216,6 +225,7 @@ home_hero = f'''<section class="hero" data-theme="dark" data-hero>
 <div class="hero-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <p class="hero-word" aria-hidden="true" data-hero-word>Eclipse</p>
 <div class="hero-stage">{xray('xray--hero', priority=True, light_cad=True)}</div>
+<p class="hero-word hero-word--outline" aria-hidden="true">Eclipse</p>
 <div class="hero-bottom">
 <div class="hero-intro">
 <h1 class="hero-title" data-split>{split("We’re Helios, FTC Team 5214.")}</h1>
@@ -293,7 +303,13 @@ season_split = f'''<section class="section seasons-home" data-theme="light"><div
 <div class="hover-img" aria-hidden="true" data-hover-img-el><img alt=""></div>
 </section>'''
 
-all_people = [(name, role) for _, _, people in team_groups for name, role, _ in people]
+# leads first (in team order), then Azaan Raza, then the other members, then mentors
+_everyone = [(name, role) for _, _, people in team_groups for name, role, _ in people]
+_leads = [p for p in _everyone if is_lead(p[1])]
+_mentors = [p for p in _everyone if p[1] == 'Mentor']
+_members = [p for p in _everyone if p not in _leads and p not in _mentors]
+_members.sort(key=lambda p: p[0] != 'Azaan Raza')
+all_people = _leads + _members + _mentors
 wall = ''.join(f'<li><span class="wall-name">{n}</span><span class="wall-role">{r}</span></li>' for n, r in all_people)
 team_wall = f'''<section class="section team-wall" data-theme="dark"><div class="container">
 {section_head('The team', '10 students and 4 mentors this season.', btn('/team/', 'Meet the team', 'sun', attrs=' data-magnetic'))}
