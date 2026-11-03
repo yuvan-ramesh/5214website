@@ -1,5 +1,0 @@
-{"upAxis":"z","simplifyRollers":true,"minPart":0.004,"srgbColors":true,"merge":true,"exposure":0.9,
- "beauty":{"envIntensity":0.7,"key":2.4,"fill":0.6,"rim":1.6,"hemi":0.3},
- "skeleton":{"faceOpacity":0.012,"linewidth":1.1,"threshold":35},
- "skeletonLight":{"lineOpacity":0.55,"linewidth":1.0,"threshold":35},
- "camera":{"el":20,"fov":28,"fill":1.25}}

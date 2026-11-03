@@ -2,7 +2,7 @@
 
 Edit content here, then run:  python3 build_pages.py
 Styles: public/assets/styles.css   Behaviour: public/assets/main.js
-Robot renders: public/assets/robot/ (made from our Onshape CAD, see README)
+Robot images: public/assets/robot/ (photo of Eclipse + our Onshape CAD from the same angle, see README)
 """
 from pathlib import Path
 from html import escape
@@ -17,14 +17,15 @@ EMAIL = '5214.helios@gmail.com'
 MEET1 = '/seasons/biobuzz/east-bay-meet-one/'
 EXT = ' target="_blank" rel="noopener noreferrer"'
 
-# Robot renders. Front = rendered robot, back = CAD skeleton (same camera, same size).
+# Robot images. Front = real photo of Eclipse (cut out), back = the CAD from the exact same camera angle.
 ROBOT = {
-    'w': 1600, 'h': 1000,
-    'render': '/assets/robot/hero-render.webp',
-    'cad': '/assets/robot/hero-cad.webp',            # dark X-ray version, shown inside the lens
-    'cad_light': '/assets/robot/hero-cad-light.webp', # line drawing on transparent, shown by the hero toggle
+    'w': 1530, 'h': 1030,
+    'render': '/assets/robot/hero-photo.webp',   # photo from the Meet One pits, background removed
+    'cad': '/assets/robot/hero-cad.webp',        # Onshape CAD lined up with the photo, shown inside the lens
+    'cad_light': '/assets/robot/hero-cad.webp',  # same CAD, shown in full by the "Show the CAD" button
     'spin_frames': 48,
-    'spin': '/assets/robot/spin/{kind}-{i}.webp',        # kind = render | cad, i = 000..047
+    'spin_kinds': 'cad',
+    'spin': '/assets/robot/spin/{kind}-{i}.webp',        # i = 000..047
     'spin_small': '/assets/robot/spin-sm/{kind}-{i}.webp',
 }
 
@@ -113,9 +114,9 @@ def marquee(items, direction=1, speed=1):
             f'<div class="marquee-copy">{row}</div><div class="marquee-copy" aria-hidden="true">{row}</div></div></div>')
 
 
-def xray(cls='', label='Rendering of Eclipse, the Helios 2026–27 robot', priority=False, light_cad=False):
+def xray(cls='', label='Eclipse, the Helios 2026–27 robot', priority=False, light_cad=False):
     load = 'fetchpriority="high"' if priority else 'loading="lazy"'
-    alt_img = (f'<img class="xray-alt" src="{ROBOT["cad_light"]}" width="{ROBOT["w"]}" height="{ROBOT["h"]}" loading="lazy" decoding="async" alt="CAD model of Eclipse">'
+    alt_img = (f'<img class="xray-alt" src="{ROBOT["cad_light"]}" width="{ROBOT["w"]}" height="{ROBOT["h"]}" loading="lazy" decoding="async" alt="CAD model of Eclipse from the same angle">'
                if light_cad else '')
     return (f'<div class="xray {cls}" data-xray data-cad="{ROBOT["cad"]}" style="--ar:{ROBOT["w"]}/{ROBOT["h"]}">'
             f'<img class="xray-front" src="{ROBOT["render"]}" width="{ROBOT["w"]}" height="{ROBOT["h"]}" {load} decoding="async" alt="{label}">'
@@ -211,7 +212,7 @@ def img_reveal(src, w, h, alt, cls='', loading='lazy', parallax=''):
 
 
 # ================================================================ HOME
-home_hero = f'''<section class="hero" data-theme="light" data-hero>
+home_hero = f'''<section class="hero" data-theme="dark" data-hero>
 <div class="hero-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <p class="hero-word" aria-hidden="true" data-hero-word>Eclipse</p>
 <div class="hero-stage">{xray('xray--hero', priority=True, light_cad=True)}</div>
@@ -222,7 +223,7 @@ home_hero = f'''<section class="hero" data-theme="light" data-hero>
 <div class="hero-actions">{btn('/seasons/biobuzz/', 'This season', 'sun', attrs=' data-magnetic')}{btn('/team/', 'Meet the team', 'line', attrs=' data-magnetic')}</div>
 </div>
 <div class="hero-side">
-<button class="xray-toggle" type="button" data-xray-toggle aria-pressed="false">{xray_icon}<span class="xray-toggle-text" data-on="Show the robot" data-off="Show the CAD">Show the CAD</span></button>
+<button class="xray-toggle xray-toggle--dark" type="button" data-xray-toggle aria-pressed="false">{xray_icon}<span class="xray-toggle-text" data-on="Show the robot" data-off="Show the CAD">Show the CAD</span></button>
 <p class="xray-hint">Move your mouse over Eclipse to see the CAD underneath.</p>
 <a class="latest" href="{MEET1}"><img src="/assets/meet1-score-118.webp" width="1024" height="768" alt="" loading="lazy"><span><small>Latest</small><strong>East Bay League Meet One</strong><span>Nov 1 · 118-point alliance high score</span></span>{arrow}</a>
 </div>
@@ -244,19 +245,19 @@ intro = f'''<section class="intro" data-theme="dark"><div class="container">
 </dl></div></section>'''
 
 spin_notes = [
-    (0.06, 0.26, 'Drive', 'Four 104 mm mecanum wheels, so Eclipse can drive and strafe in any direction.'),
-    (0.28, 0.46, 'Intake', 'Game pieces come in at the front and ride up the intake ramp.'),
-    (0.48, 0.64, 'Shooter', 'A transfer ramp feeds the shooter on top of the robot.'),
-    (0.66, 1.01, 'CAD', 'We designed Eclipse in Onshape. This is the real CAD model.'),
+    (0.06, 0.28, 'Drive', 'Four 104 mm mecanum wheels, so Eclipse can drive and strafe in any direction.'),
+    (0.30, 0.52, 'Intake', 'Game pieces come in at the front and ride up the intake ramp.'),
+    (0.54, 0.76, 'Shooter', 'A transfer ramp feeds the shooter on top of the robot.'),
+    (0.78, 1.01, 'Onshape', 'Every part here comes from our real CAD model of Eclipse.'),
 ]
 notes_html = ''.join(f'<li class="spin-note" data-from="{a}" data-to="{b}"><strong>{t}</strong><span>{d}</span></li>' for a, b, t, d in spin_notes)
-spin = f'''<section class="spin" data-theme="dark" data-spin data-frames="{ROBOT['spin_frames']}" data-src="{ROBOT['spin']}" data-src-small="{ROBOT['spin_small']}" aria-label="Eclipse, our 2026–27 robot, turning 360 degrees">
+spin = f'''<section class="spin" data-theme="dark" data-spin data-frames="{ROBOT['spin_frames']}" data-kinds="{ROBOT['spin_kinds']}" data-src="{ROBOT['spin']}" data-src-small="{ROBOT['spin_small']}" aria-label="Eclipse, our 2026–27 robot, turning 360 degrees">
 <div class="spin-sticky">
 <p class="spin-ghost" aria-hidden="true" data-spin-ghost>Eclipse</p>
 <div class="spin-head"><p class="spin-kicker">Our 2026–27 robot</p><h2 class="spin-title" data-split>{split('Eclipse')}</h2></div>
-<div class="spin-stage"><canvas class="spin-canvas" role="img" aria-label="Eclipse rotating, then switching to its CAD model"></canvas><span class="spin-scan" aria-hidden="true"></span></div>
+<div class="spin-stage"><canvas class="spin-canvas" role="img" aria-label="The CAD model of Eclipse rotating 360 degrees"></canvas></div>
 <ul class="spin-notes">{notes_html}</ul>
-<div class="spin-meter" aria-hidden="true"><span data-spin-deg>000°</span><i><b data-spin-bar></b></i><span data-spin-mode>Render</span></div>
+<div class="spin-meter" aria-hidden="true"><span data-spin-deg>000°</span><i><b data-spin-bar></b></i><span data-spin-mode>CAD</span></div>
 </div>
 </section>'''
 
@@ -398,7 +399,7 @@ archive = ''.join(f'<li><a href="{url}"{EXT}><span class="arc-year">{year}</span
 seasons_page = page_hero('Seasons', 'We’ve competed in FTC since 2010. Here’s this season, last season, and our official results from earlier years.', '16 seasons') + f'''
 <section class="section" data-theme="light"><div class="container">
 <div class="season-cards">
-<a class="season-card" href="/seasons/biobuzz/"><div class="season-card-img">{xray('xray--card', 'Rendering of Eclipse')}</div><div class="season-card-body"><span>2026–27 · This season</span><h2>BIOBUZZ</h2><p>Our robot is Eclipse. Updates through the season.</p></div></a>
+<a class="season-card" href="/seasons/biobuzz/"><div class="season-card-img">{xray('xray--card', 'Eclipse, our 2026–27 robot')}</div><div class="season-card-body"><span>2026–27 · This season</span><h2>BIOBUZZ</h2><p>Our robot is Eclipse. Updates through the season.</p></div></a>
 <a class="season-card season-card--award" href="/seasons/decode/"><div class="season-card-img award"><span>East Bay League Tournament</span><strong>Innovate Award</strong><span>February 8, 2026</span></div><div class="season-card-body"><span>2025–26 · Last season</span><h2>DECODE</h2><p>11–7 across four official events.</p></div></a>
 </div></div></section>
 <section class="section" data-theme="dark"><div class="container">
@@ -412,7 +413,7 @@ back_seasons = f'<a href="/seasons/" class="back-link">{arrow_back}<span>All sea
 biobuzz = page_hero('BIOBUZZ', 'BIOBUZZ is this year’s FTC game. Our robot is Eclipse, and we’ll post updates here as the season goes on.', '2026–27 season', top=back_seasons, cls='page-hero--season') + f'''
 <section class="section robot-sec" data-theme="dark"><div class="container">
 <div class="robot-head"><h2 class="h2" data-split>{split('Eclipse')}</h2><p>Hover over the robot, or tap the button, to see the CAD.</p></div>
-<div class="robot-stage">{xray('xray--dark', 'Rendering of Eclipse')}<button class="xray-toggle xray-toggle--dark" type="button" data-xray-toggle aria-pressed="false">{xray_icon}<span class="xray-toggle-text" data-on="Show the robot" data-off="Show the CAD">Show the CAD</span></button></div>
+<div class="robot-stage">{xray('xray--dark', 'Eclipse, our 2026–27 robot')}<button class="xray-toggle xray-toggle--dark" type="button" data-xray-toggle aria-pressed="false">{xray_icon}<span class="xray-toggle-text" data-on="Show the robot" data-off="Show the CAD">Show the CAD</span></button></div>
 </div></section>
 <section class="section" data-theme="light"><div class="container">
 {section_head('Events', 'East Bay League meets this season.', tlink('https://ftc-resources.firstinspires.org/ftc/game', 'Official game info', True))}

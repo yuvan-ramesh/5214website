@@ -313,8 +313,8 @@ html.is-ready .hero-rings i:nth-child(4) { opacity: .3; transition-delay: .3s; }
 }
 .js .hero-word { opacity: 0; transform: translate(-50%, -38%); transition: opacity 1.2s, transform 1.6s var(--ease); }
 html.is-ready .hero-word { opacity: 1; transform: translate(-50%, -50%); }
-.hero-stage { position: absolute; left: 0; right: 0; top: var(--header-h); bottom: clamp(120px, 19vh, 200px); z-index: 2; display: grid; place-items: center; padding: 0 var(--pad); }
-.xray--hero { width: min(100%, calc((100svh - var(--header-h) - clamp(120px, 19vh, 200px)) * 1.6), 1500px); }
+.hero-stage { position: absolute; left: 0; right: 0; top: var(--header-h); bottom: clamp(150px, 23vh, 240px); z-index: 2; display: grid; place-items: center; padding: 0 var(--pad); }
+.xray--hero { width: min(100%, calc((100svh - var(--header-h) - clamp(150px, 23vh, 240px)) * 1.485), 1500px); -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent 99%); mask-image: linear-gradient(to bottom, #000 80%, transparent 99%); }
 .js .xray--hero { opacity: 0; transform: translateY(6%) scale(.94); transition: opacity 1.2s .15s, transform 1.8s var(--ease) .15s; }
 html.is-ready .xray--hero { opacity: 1; transform: none; }
 .hero-bottom { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 0 var(--pad) clamp(24px, 3vw, 40px); }
@@ -328,6 +328,13 @@ html.is-ready .hero-text, html.is-ready .hero-actions, html.is-ready .hero-side 
 html.is-ready .hero-text { transition-delay: .35s; }
 html.is-ready .hero-actions { transition-delay: .45s; }
 html.is-ready .hero-side { transition-delay: .55s; }
+/* the hero sits on night so the cut-out photo of Eclipse blends in */
+.hero[data-theme="dark"] .hero-word { color: rgba(242, 240, 235, .055); }
+.hero[data-theme="dark"] .hero-rings i { border-color: var(--on-night-line); }
+.hero[data-theme="dark"] .hero-text { color: var(--on-night-mute); }
+.hero[data-theme="dark"] .latest { background: var(--night-2); }
+.hero[data-theme="dark"] .latest:hover { background: var(--night-3); }
+.hero[data-theme="dark"] .hero-stage::after { content: ""; position: absolute; left: 50%; bottom: 2%; z-index: -1; width: 70%; height: 22%; transform: translateX(-50%); background: radial-gradient(closest-side, rgba(246, 163, 44, .16), transparent); filter: blur(10px); pointer-events: none; }
 .xray-hint { max-width: 25ch; font-size: 13px; line-height: 1.4; color: var(--mute); text-align: right; }
 .latest { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 14px; width: min(360px, 100%); padding: 10px 16px 10px 10px; border-radius: 16px; background: var(--paper-2); transition: background-color .3s, transform .6s var(--ease); }
 .latest img { width: 64px; height: 50px; object-fit: cover; border-radius: 10px; }
@@ -338,7 +345,7 @@ html.is-ready .hero-side { transition-delay: .55s; }
 .latest:hover { background: var(--paper-3); transform: translateY(-3px); }
 .latest:hover .icon { transform: translateX(4px); }
 
-/* ---------------------------------------------------------------- x-ray reveal (render in front, CAD behind) */
+/* ---------------------------------------------------------------- x-ray reveal (photo in front, CAD behind) */
 .xray { position: relative; aspect-ratio: var(--ar, 16 / 10); cursor: crosshair; touch-action: pan-y; }
 .xray-front { width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
 .xray-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -557,8 +564,8 @@ html.is-ready .page-lead, html.is-ready .page-hero .page-meta, html.is-ready .pa
 .season-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .season-card { display: flex; flex-direction: column; overflow: hidden; border-radius: 22px; background: var(--paper-2); transition: transform .7s var(--ease), box-shadow .7s var(--ease); }
 .season-card:hover { transform: translateY(-8px); box-shadow: 0 40px 70px -40px rgba(14, 13, 12, .45); }
-.season-card-img { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--paper); display: grid; place-items: center; }
-.season-card-img .xray { width: 100%; }
+.season-card-img { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--night); display: grid; place-items: center; }
+.season-card-img .xray { width: 92%; }
 .season-card-img.award { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 6px; padding: clamp(24px, 3vw, 40px); background: repeating-radial-gradient(circle at 85% 20%, rgba(253, 233, 189, .14) 0 1px, transparent 1px 34px), var(--flare); color: var(--core); }
 .season-card-img.award strong { font-weight: 920; font-stretch: 120%; font-size: clamp(40px, 5vw, 76px); line-height: .85; letter-spacing: -.02em; text-transform: uppercase; color: #fff; transition: transform .8s var(--ease); transform-origin: left bottom; }
 .season-card:hover .award strong { transform: scale(1.05); }
@@ -694,7 +701,7 @@ html.is-ready .page-lead, html.is-ready .page-hero .page-meta, html.is-ready .pa
   .hero { height: auto; min-height: 0; padding: var(--header-h) 0 8px; }
   .hero-stage { position: relative; top: auto; bottom: auto; padding-top: 3vh; }
   .xray--hero { width: 100%; }
-  .hero-word, .hero-rings { top: calc(var(--header-h) + 3vh + (100vw - 2 * var(--pad)) / 3.2); }
+  .hero-word, .hero-rings { top: calc(var(--header-h) + 3vh + (100vw - 2 * var(--pad)) / 2.97); }
   .hero-bottom { position: relative; flex-direction: column; align-items: stretch; padding-top: 12px; }
   .hero-side { justify-items: start; grid-template-columns: auto minmax(0, 1fr); align-items: center; }
   .hero-side .latest { grid-column: 1 / -1; }
@@ -710,7 +717,7 @@ html.is-ready .page-lead, html.is-ready .page-hero .page-meta, html.is-ready .pa
   .header-actions .btn { display: none; }
   .menu-btn { width: 44px; height: 44px; }
   .hero-word { font-size: 23vw; }
-  .hero-word, .hero-rings { top: calc(var(--header-h) + 4vh + 35vw); }
+  .hero-word, .hero-rings { top: calc(var(--header-h) + 4vh + 34vw); }
   .hero-stage { padding: 4vh 0 0; }
   .xray--hero { width: 112vw; max-width: none; margin: 0 -6vw; }
   .hero-bottom { padding-top: 6px; }

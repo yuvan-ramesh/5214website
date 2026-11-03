@@ -267,24 +267,50 @@
     });
   });
 
-  /* ------------------------------------------------------------ x-ray: render in front, CAD behind */
+  /* ------------------------------------------------------------ x-ray: photo in front, CAD behind */
   const xrays = [];
   document.querySelectorAll('[data-xray]').forEach((el) => {
     const canvas = el.querySelector('.xray-canvas');
     const ctx = canvas.getContext('2d');
+    let W = 0, H = 0;
     const cad = new Image();
     cad.decoding = 'async';
     let cadReady = false;
-    cad.onload = () => { cadReady = true; };
+    const layer = document.createElement('canvas');
+    const lctx = layer.getContext('2d');
+    // the lens shows the CAD on the section's own colour with a faint grid, like a CAD viewport
+    let bgColor = 'rgb(18, 16, 16)';
+    for (let n = el.parentElement; n; n = n.parentElement) {
+      const c = getComputedStyle(n).backgroundColor;
+      if (c && c !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(c)) { bgColor = c; break; }
+    }
+    const rgb = (bgColor.match(/\d+/g) || [18, 16, 16]).map(Number);
+    const darkBg = (rgb[0] * 0.3 + rgb[1] * 0.59 + rgb[2] * 0.11) < 128;
+    const buildLayer = () => {
+      if (!cadReady || !W) return;
+      layer.width = W; layer.height = H;
+      lctx.fillStyle = bgColor; lctx.fillRect(0, 0, W, H);
+      const step = Math.max(14, Math.round(W / 46));
+      for (let x = (W / 2) % step, n = 0; x < W; x += step, n++) {
+        lctx.fillStyle = darkBg ? 'rgba(242,240,235,.05)' : 'rgba(14,13,12,.06)';
+        lctx.fillRect(Math.round(x), 0, 1, H);
+      }
+      for (let y = (H / 2) % step; y < H; y += step) {
+        lctx.fillStyle = darkBg ? 'rgba(242,240,235,.05)' : 'rgba(14,13,12,.06)';
+        lctx.fillRect(0, Math.round(y), W, 1);
+      }
+      lctx.drawImage(cad, 0, 0, W, H);
+    };
+    cad.onload = () => { cadReady = true; buildLayer(); };
     const startLoad = () => { if (!cad.src) cad.src = el.dataset.cad; };
     const mask = document.createElement('canvas');
     const mctx = mask.getContext('2d');
-    let W = 0, H = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const size = () => {
       const r = el.getBoundingClientRect();
       W = Math.max(1, Math.round(r.width * dpr)); H = Math.max(1, Math.round(r.height * dpr));
       canvas.width = mask.width = W; canvas.height = mask.height = H;
+      buildLayer();
     };
     size();
     new ResizeObserver(size).observe(el);
@@ -338,7 +364,7 @@
       ctx.clearRect(0, 0, W, H);
       if (cadReady && st.idle < 40) {
         ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(cad, 0, 0, W, H);
+        ctx.drawImage(layer, 0, 0);
         ctx.globalCompositeOperation = 'destination-in';
         ctx.drawImage(mask, 0, 0);
         ctx.globalCompositeOperation = 'source-over';
@@ -389,7 +415,8 @@
     const mode = sec.querySelector('[data-spin-mode]');
     const bar = sec.querySelector('[data-spin-bar]');
     const ghost = sec.querySelector('[data-spin-ghost]');
-    const frames = { render: new Array(N), cad: new Array(N) };
+    const kinds = (sec.dataset.kinds || 'render,cad').split(',');
+    const frames = {}; kinds.forEach((k) => { frames[k] = new Array(N); });
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let W = 0, H = 0, started = false, dirty = true;
     const src = (kind, i) => pattern.replace('{kind}', kind).replace('{i}', String(i).padStart(3, '0'));
@@ -399,7 +426,7 @@
       // coarse pass first so scrubbing works right away, then fill in the gaps
       const order = [];
       for (let step of [12, 4, 2, 1]) for (let i = 0; i < N; i += step) if (!order.includes(i)) order.push(i);
-      order.forEach((i) => ['render', 'cad'].forEach((kind) => {
+      order.forEach((i) => kinds.forEach((kind) => {
         const im = new Image(); im.decoding = 'async'; im.src = src(kind, i); im.onload = () => { im.ok = true; dirty = true; };
         frames[kind][i] = im;
       }));
@@ -417,12 +444,12 @@
     };
     const draw = (p) => {
       const idx = Math.round(p * N) % N;
-      const scan = smoothstep(0.6, 0.86, p);
+      const scan = kinds.length > 1 ? smoothstep(0.6, 0.86, p) : 0;
       ctx.clearRect(0, 0, W, H);
-      const r = nearest('render', idx);
+      const r = nearest(kinds[0], idx);
       if (r) ctx.drawImage(r, 0, 0, W, H);
       if (scan > 0) {
-        const c = nearest('cad', idx);
+        const c = nearest(kinds[1], idx);
         if (c) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W * scan, H); ctx.clip(); ctx.drawImage(c, 0, 0, W, H); ctx.restore(); }
       }
       sec.style.setProperty('--scan', scan.toFixed(4));
@@ -430,13 +457,13 @@
       notes.forEach((n) => n.classList.toggle('is-active', p >= Number(n.dataset.from) && p < Number(n.dataset.to)));
       if (deg) deg.textContent = `${String(Math.round(p * 360) % 361).padStart(3, '0')}°`;
       if (bar) bar.parentElement.style.setProperty('--p', p.toFixed(4));
-      if (mode) mode.textContent = scan > 0.5 ? 'CAD' : 'Render';
+      if (mode && kinds.length > 1) mode.textContent = scan > 0.5 ? 'CAD' : 'Render';
       if (ghost) ghost.style.setProperty('--gx', `${(-p * vw * 0.55).toFixed(1)}px`);
     };
     if (reduce) {
       sec.classList.add('is-static');
       load();
-      const once = () => { const f = frames.render[0]; if (f && f.ok) { size(); draw(0); } else setTimeout(once, 200); };
+      const once = () => { const f = frames[kinds[0]][0]; if (f && f.ok) { size(); draw(0); } else setTimeout(once, 200); };
       once();
       return;
     }

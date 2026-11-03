@@ -1,0 +1,115 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>photo</title>
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// Perspective CAD passes for matching a real photo (model kept in its own metres, z up -> y up).
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+const S = window.P = {};
+let renderer, root, W, H, cam;
+S.init = async (o) => {
+  W = o.width; H = o.height;
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1); renderer.setSize(W, H);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  document.body.appendChild(renderer.domElement);
+  const g = await new GLTFLoader().loadAsync(o.url);
+  root = g.scene; root.rotation.x = -Math.PI / 2; root.updateMatrixWorld(true);
+  const kill = [];
+  root.traverse(m => { if (m.isMesh && (o.hide || []).some(h => (m.name + '|' + (m.parent && m.parent.name)).includes(h))) kill.push(m); });
+  kill.forEach(m => m.parent.remove(m));
+  const bb = new THREE.Box3().setFromObject(root);
+  S.box = [bb.min.toArray(), bb.max.toArray()];
+  // per-colour merge for speed
+  const groups = new Map(); S.meshes = [];
+  root.traverse(m => { if (!m.isMesh) return; S.meshes.push(m); const c = m.material.color ? m.material.color.getHexString() : 'aaaaaa';
+    const gc = new THREE.BufferGeometry(); gc.setAttribute('position', m.geometry.attributes.position); if (m.geometry.index) gc.setIndex(m.geometry.index);
+    const w = gc.clone(); w.applyMatrix4(m.matrixWorld); const n = w.index ? w.toNonIndexed() : w;
+    if (!groups.has(c)) groups.set(c, []); groups.get(c).push(n); });
+  S.parts = [];
+  groups.forEach((arr, c) => { const mg = BufferGeometryUtils.mergeGeometries(arr, false); mg.computeVertexNormals(); S.parts.push({ c, g: mg }); });
+  S.all = BufferGeometryUtils.mergeGeometries(S.parts.map(p => p.g), false);
+  return { box: S.box, colors: S.parts.map(p => [p.c, p.g.attributes.position.count / 3]) };
+};
+S.edges = (threshold = 30) => { const t = performance.now(); const cache = new Map(); const segs = [];
+  S.meshes.forEach(m => { let e = cache.get(m.geometry.uuid); if (!e) { e = new THREE.EdgesGeometry(m.geometry, threshold); cache.set(m.geometry.uuid, e); } const c = e.clone(); c.applyMatrix4(m.matrixWorld); segs.push(c); });
+  S.eg = BufferGeometryUtils.mergeGeometries(segs, false); S.lg = new LineSegmentsGeometry().setPositions(S.eg.attributes.position.array);
+  return { ms: Math.round(performance.now() - t), n: S.eg.attributes.position.count / 2 }; };
+S.camera = (c) => {
+  // c: {pos:[x,y,z], target:[x,y,z], fov (vertical deg), roll (deg), shift:[sx,sy] principal point offset in px}
+  cam = new THREE.PerspectiveCamera(c.fov, W / H, 0.02, 20);
+  cam.position.fromArray(c.pos); cam.up.set(0, 1, 0); cam.lookAt(new THREE.Vector3().fromArray(c.target));
+  if (c.roll) cam.rotateZ(THREE.MathUtils.degToRad(c.roll));
+  if (c.shift) cam.setViewOffset(W, H, -c.shift[0], -c.shift[1], W, H);
+  cam.updateMatrixWorld(true); cam.updateProjectionMatrix();
+  return true;
+};
+S.render = (mode, o = {}) => {
+  const scene = new THREE.Scene();
+  if (mode === 'mask') {
+    const m = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    scene.add(new THREE.Mesh(S.all, m)); renderer.setClearColor(0x000000, 1);
+  } else if (mode === 'xray') {
+    // technical x-ray: dark fill, faint hidden lines, bright visible lines
+    const fill = new THREE.MeshBasicMaterial({ color: new THREE.Color(o.fill ?? '#121010'), side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1.5, polygonOffsetUnits: 2, transparent: true, opacity: o.fillOpacity ?? 0.92 });
+    const fm = new THREE.Mesh(S.all, fill); fm.renderOrder = 0; scene.add(fm);
+    const mk = (op, w, df, col) => { const lm = new LineMaterial({ color: new THREE.Color(col), linewidth: w, transparent: true, opacity: op, depthTest: true, depthWrite: false }); lm.depthFunc = df; lm.resolution.set(W, H); const l = new LineSegments2(S.lg, lm); return l; };
+    const hid = mk(o.hiddenOpacity ?? 0.16, o.hiddenWidth ?? 1, THREE.GreaterDepth, o.hiddenColor ?? o.lineColor ?? '#F6A32C'); hid.renderOrder = 1; scene.add(hid);
+    const vis = mk(o.lineOpacity ?? 0.95, o.linewidth ?? 1.2, THREE.LessEqualDepth, o.lineColor ?? '#F2F0EB'); vis.renderOrder = 2; scene.add(vis);
+    renderer.setClearColor(0x000000, 0);
+  } else {
+    // Onshape-style shaded with edges
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x9a9a9a, o.hemi ?? 1.6); scene.add(hemi);
+    const d1 = new THREE.DirectionalLight(0xffffff, o.key ?? 1.4); d1.position.copy(cam.position).add(new THREE.Vector3(0.3, 0.6, 0.2)); scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffffff, o.fill ?? 0.5); d2.position.set(-1, 0.4, -1); scene.add(d2);
+    S.parts.forEach(p => { const col = new THREE.Color('#' + p.c);
+      const mt = new THREE.MeshLambertMaterial({ color: col, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1.5, polygonOffsetUnits: 2, transparent: (o.faceOpacity ?? 1) < 1, opacity: o.faceOpacity ?? 1 });
+      scene.add(new THREE.Mesh(p.g, mt)); });
+    if (S.eg && o.thin) { const lb = new THREE.LineBasicMaterial({ color: o.lineColor ?? 0x111111, transparent: true, opacity: o.lineOpacity ?? 0.85 }); scene.add(new THREE.LineSegments(S.eg, lb)); }
+    else if (S.lg && (o.lines ?? true)) { const lm = new LineMaterial({ color: o.lineColor ?? 0x111111, linewidth: o.linewidth ?? 1, transparent: true, opacity: o.lineOpacity ?? 0.85 }); lm.resolution.set(W, H); scene.add(new LineSegments2(S.lg, lm)); }
+    if (o.bg) renderer.setClearColor(new THREE.Color(o.bg), 1); else renderer.setClearColor(0x000000, 0);
+  }
+  renderer.render(scene, cam);
+  return renderer.domElement.toDataURL('image/png');
+};
+
+// visible edge sample points from the current camera (3D, world), for photo alignment
+S.visEdges = (o = {}) => {
+  const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.FloatType, format: THREE.RGBAFormat });
+  const mat = new THREE.ShaderMaterial({ side: THREE.DoubleSide, vertexShader: 'varying vec3 vp; void main(){ vec4 mv = modelViewMatrix*vec4(position,1.0); vp = mv.xyz; gl_Position = projectionMatrix*mv; }', fragmentShader: 'varying vec3 vp; void main(){ gl_FragColor = vec4(-vp.z, 0.0, 0.0, 1.0); }' });
+  const scene = new THREE.Scene(); scene.add(new THREE.Mesh(S.all, mat));
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(scene, cam); 
+  const buf = new Float32Array(W * H * 4); renderer.readRenderTargetPixels(rt, 0, 0, W, H, buf); renderer.setRenderTarget(null);
+  const pos = S.eg.attributes.position.array; const out = []; const v = new THREE.Vector3(); const vv = new THREE.Vector3();
+  const tol = o.tol ?? 0.004; const every = o.every ?? 1;
+  const test = (x, y, z) => { v.set(x, y, z); vv.copy(v).applyMatrix4(cam.matrixWorldInverse); const d = -vv.z; v.project(cam);
+    const px = Math.round((v.x * 0.5 + 0.5) * W), py = Math.round((v.y * 0.5 + 0.5) * H); if (px < 1 || py < 1 || px >= W - 1 || py >= H - 1) return;
+    let m = 1e9; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const z = buf[((py + dy) * W + px + dx) * 4]; if (z > 0 && z < m) m = z; }
+    if (m === 1e9 || d <= m + tol) out.push(x, y, z); };
+  const sp = o.spacing ?? 0.002;
+  for (let i = 0; i < pos.length; i += 6) { const ax = pos[i], ay = pos[i + 1], az = pos[i + 2], bx = pos[i + 3], by = pos[i + 4], bz = pos[i + 5];
+    const L = Math.hypot(bx - ax, by - ay, bz - az); const n = Math.max(1, Math.round(L / sp));
+    if (n === 1 && Math.random() > L / sp) continue;
+    for (let k = 0; k < n; k++) { const t = (k + 0.5) / n; test(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t); } }
+  rt.dispose();
+  const f = new Float32Array(out); let bin = ''; const u8 = new Uint8Array(f.buffer); for (let i = 0; i < u8.length; i += 32768) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 32768));
+  return btoa(bin);
+};
+
+S.pick = (pts) => {
+  const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.FloatType, format: THREE.RGBAFormat });
+  const mat = new THREE.ShaderMaterial({ side: THREE.DoubleSide, vertexShader: 'varying vec3 wp; void main(){ vec4 w = modelMatrix*vec4(position,1.0); wp = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }', fragmentShader: 'varying vec3 wp; void main(){ gl_FragColor = vec4(wp, 1.0); }' });
+  const scene = new THREE.Scene(); scene.add(new THREE.Mesh(S.all, mat));
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(scene, cam);
+  const out = pts.map(([x, y]) => { const b = new Float32Array(4); renderer.readRenderTargetPixels(rt, Math.round(x), H - 1 - Math.round(y), 1, 1, b); return Array.from(b); });
+  renderer.setRenderTarget(null); rt.dispose(); return out;
+};
+S.ready = true;
+</script></body></html>

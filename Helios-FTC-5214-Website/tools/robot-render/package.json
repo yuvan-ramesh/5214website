@@ -1,8 +1,11 @@
 {
   "name": "helios-robot-render",
   "private": true,
-  "description": "Renders the Helios robot from an Onshape glTF export for the website",
+  "description": "Renders the Eclipse CAD for the Helios website",
   "dependencies": {
-    "three": "0.170.0"
+    "three": "0.170.0",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^0.22.0"
   }
 }

@@ -4,7 +4,7 @@ A multi-page team website for GitHub + Vercel, built with plain HTML, CSS and Ja
 
 ## Pages
 
-- `/` Home: robot hero with the CAD X-ray effect, scroll-scrubbed robot turntable, Meet One photo track, seasons, team, outreach
+- `/` Home: photo of Eclipse with the CAD revealed under the cursor, a scroll-scrubbed CAD turntable, Meet One photo track, seasons, team, outreach
 - `/about/` About, timeline and how the team is organized
 - `/team/` 2026–27 team by group, with portrait placeholders
 - `/outreach/` October 16, 2026 IntelliKits event at Lakeside Apartments in Concord
@@ -37,19 +37,18 @@ Open `http://localhost:8000`. The contact form **will not send email on the loca
 - **Colors** come from the logo: sun orange `#F6A32C`, flare red `#E0441F`, core cream `#FDE9BD`, plus paper `#F2F0EB` and night `#121010` for light and dark sections.
 - **Type**: Mona Sans (variable weight and width) for everything, with Gloock for a few serif accents. Both are self-hosted in `public/assets/fonts/` under the SIL Open Font License.
 - **Smooth scrolling**: Lenis 1.3.27 (MIT), vendored at `public/assets/vendor/lenis.min.js`. It only runs on mouse and trackpad devices.
-- **Motion**: first-visit loader, page transition curtain, headings that rise in, the robot X-ray lens in the hero, a scroll-scrubbed 360° turntable that switches to the CAD, marquee text that reacts to scroll speed, a sideways-scrolling photo track, image reveals, count-up numbers, and hover effects on buttons, cards and links.
+- **Motion**: first-visit loader, page transition curtain, headings that rise in, the CAD lens over the robot photo in the hero, a scroll-scrubbed 360° CAD turntable, marquee text that reacts to scroll speed, a sideways-scrolling photo track, image reveals, count-up numbers, and hover effects on buttons, cards and links.
 - **Accessibility**: when a visitor has reduced motion turned on, the loader, transitions, smooth scrolling, pinned scroll scenes and auto-moving effects are switched off and everything is shown in place. Every image has alt text, the menu and photo viewer trap focus and close with Escape, and the site works without JavaScript (content is all in the HTML).
 
-## Robot renders
+## Robot images
 
-`public/assets/robot/` holds images rendered from our Onshape CAD (Assembly 1 in the FTC 5214 document):
+`public/assets/robot/` holds:
 
-- `hero-render.webp`: the robot render (transparent background)
-- `hero-cad.webp`: the CAD skeleton from the same camera, shown inside the X-ray lens
-- `hero-cad-light.webp`: a line drawing of the CAD, shown when someone presses "Show the CAD"
-- `spin/` and `spin-sm/`: 48 frames each of the render and the CAD for the home page turntable (`spin-sm` is used on phones)
+- `hero-photo.webp`: a real photo of Eclipse from the Meet One pits with the background removed
+- `hero-cad.webp`: our Onshape CAD (Assembly 1) rendered from the same camera angle as the photo, so it lines up exactly. It shows inside the cursor lens and when someone presses "Show the CAD"
+- `spin/` and `spin-sm/`: 48 frames of the CAD turning 360° for the home page scroll section (`spin-sm` is used on phones)
 
-The tools that made them are in `tools/robot-render/`. To re-render after the robot changes, export the assembly from Onshape as glTF and follow `tools/robot-render/README.md`.
+The tools that made them are in `tools/robot-render/`. To redo them after the robot changes, export the assembly from Onshape as glTF and follow `tools/robot-render/README.md`.
 
 ## Deploy with GitHub + Vercel
 

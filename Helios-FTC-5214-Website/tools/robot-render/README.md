@@ -1,29 +1,41 @@
-# Robot renders
+# Robot images
 
-These scripts turn our Onshape CAD into the robot images on the website:
-a rendered robot, a matching CAD "skeleton" from the same camera, a line drawing, and 48-frame turntables of both.
+These scripts make the robot images on the home page:
+
+- **Hero**: a real photo of Eclipse from the Meet One pits (background removed), and the Onshape CAD rendered from the *same camera angle*, so the CAD lines up with the photo under the cursor.
+- **Turntable**: 48 frames of the CAD turning 360° for the scroll section.
 
 ## 1. Export the CAD
 
-In Onshape, right-click the **Assembly 1** tab → **Export** → format **glTF** → save the file into this folder as `robot.glb` (or `robot.gltf`).
+In Onshape, right-click the **Assembly 1** tab → **Export** → **glTF**, and save it in this folder as `robot.glb`.
 
 ## 2. Install
 
 ```bash
 cd tools/robot-render
-npm install                                   # three.js
-pip install playwright pillow
+npm install
+pip install playwright pillow numpy opencv-python-headless rembg onnxruntime
 python3 -m playwright install chromium
 ```
 
-## 3. Render
+## 3. Shrink the model
+
+The export is huge (each mecanum roller is ~800k triangles). This keeps every part, including the rollers, but cuts the triangle count:
 
 ```bash
-python3 -m http.server 8899 &                 # serve this folder for the renderer
-python3 drive.py robot.glb out --frames 48 --size 1280x800 --ss 1 --opts "$(cat robot_opts.json)"
-python3 make_assets.py out ../../public/assets/robot
+node decimate.mjs robot.glb robot-d.glb 8000 1200
 ```
 
-`drive.py` renders `hero-render.png`, `hero-cad.png`, `hero-cadlight.png` and the turntable frames into `out/`.
-`robot_opts.json` holds the settings used for the site (Z-up, simplified mecanum rollers, small screws and nuts left out, lighting and camera). The hero images were rendered separately at `--size 1600x1000 --ss 1.5 --frames 0`.
-`make_assets.py` converts them to the WebP files the site loads. Large files (`robot.glb`, `out/`, `node_modules/`) are ignored by git.
+## 4. Render and build
+
+```bash
+python3 -m http.server 8899 &
+python3 render_cad.py hero robot-d.glb out
+python3 render_cad.py spin robot-d.glb out
+python3 make_hero.py ../../public/assets/meet1-robot-workbench.webp out ../../public/assets/robot
+python3 make_spin.py out ../../public/assets/robot
+```
+
+`hero_camera.json` is the camera that matches the photo. It was found by matching points on the drivetrain plate, pulleys, shooter and intake between the photo and the CAD, then fine-tuned by lining up edges. If you swap in a different photo, that camera has to be found again.
+
+`robot.glb`, `robot-d.glb`, `out/` and `node_modules/` are ignored by git.

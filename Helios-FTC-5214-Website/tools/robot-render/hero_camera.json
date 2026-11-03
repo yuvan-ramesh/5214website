@@ -1,0 +1,22 @@
+{
+ "photo": "meet1-robot-workbench.webp",
+ "width": 1680,
+ "height": 1120,
+ "az": 315.0033,
+ "el": 13.0068,
+ "dist": 1.37942,
+ "target": [
+  -0.02063,
+  0.10796,
+  -0.01378
+ ],
+ "fov": 16.9302,
+ "roll": 0.139,
+ "crop": [
+  150,
+  90,
+  1680,
+  1120
+ ],
+ "note": "Camera that lines the CAD up with the Meet One pit photo. Model units are metres, Onshape Z-up turned to Y-up."
+}
