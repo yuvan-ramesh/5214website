@@ -43,7 +43,7 @@ seasons = [
 team_groups = [
     ['Leadership', 'Runs the team', [['Bryan Pan', 'Captain', 'BP']]],
     ['Software', 'Programs the robot', [['Yuvan Ramesh', 'Software Lead', 'YR'], ['Azaan Raza', 'Software Member', 'AR']]],
-    ['Hardware, Electrical & Design', 'Designs, wires, builds and fixes the robot', [['Arhaan Reddy', 'Hardware Lead', 'AR'], ['Rishi Mamdur', 'Electrical Lead', 'RM'], ['Neel Gupta', 'Design Lead', 'NG'], ['Nyles Han', 'Hardware Member', 'NH'], ['Jacob Li', 'Hardware Member', 'JL']]],
+    ['Hardware, Electrical & Design', 'Designs, wires, builds and fixes the robot', [['Arhaan Reddy', 'Hardware Lead', 'AR'], ['Rishi Mamdur', 'Electrical Lead', 'RM'], ['Neel Gupta', 'Design Lead', 'NG'], ['Nyles Han', 'Hardware Member', 'NH']]],
     ['Business, Outreach & Media', 'Handles business, outreach events and media', [['Elan Jain', 'Business Lead', 'EJ'], ['Kaveesh Chaturvedi', 'Media Lead', 'KC']]],
     ['Drive Team', 'Drives in matches and plans strategy', [['Damodar Kriplani', 'Driver', 'DK'], ['Ronav Gupta', 'Drive Coach / Youth Mentor', 'RG']]],
     ['Mentors', 'Help and advise the team', [['Lina Tannous', 'Mentor', 'LT'], ['Leon Cox', 'Mentor', 'LC'], ['Ramana Cherukuri', 'Mentor', 'RC']]],
@@ -296,7 +296,7 @@ season_split = f'''<section class="section seasons-home" data-theme="light"><div
 all_people = [(name, role) for _, _, people in team_groups for name, role, _ in people]
 wall = ''.join(f'<li><span class="wall-name">{n}</span><span class="wall-role">{r}</span></li>' for n, r in all_people)
 team_wall = f'''<section class="section team-wall" data-theme="dark"><div class="container">
-{section_head('The team', '11 students and 4 mentors this season.', btn('/team/', 'Meet the team', 'sun', attrs=' data-magnetic'))}
+{section_head('The team', '10 students and 4 mentors this season.', btn('/team/', 'Meet the team', 'sun', attrs=' data-magnetic'))}
 <ul class="wall">{wall}</ul>
 </div></section>'''
 
@@ -357,7 +357,7 @@ divisions = ''.join(
     f'<section class="division" aria-labelledby="div-{n}"><div class="division-head"><h2 id="div-{n}">{division}</h2><p>{sub}</p></div>'
     f'<ul class="members">{"".join(member_card(nm, rl, ini) for nm, rl, ini in people)}</ul></section>'
     for n, (division, sub, people) in enumerate(team_groups, start=1))
-team = page_hero('The team', '11 students and 4 mentors for the 2026–27 season.', 'Helios 2026–27',
+team = page_hero('The team', '10 students and 4 mentors for the 2026–27 season.', 'Helios 2026–27',
                  extra=img_reveal('/assets/meet1-team-robot.webp', 1024, 768, 'Helios team members with Eclipse at East Bay League Meet One', 'page-hero-img', 'eager')) + f'''
 <section class="section" data-theme="light"><div class="container">{divisions}<p class="small-note">Photos coming soon.</p></div></section>'''
 page('Team', 'Meet the 2026–27 Helios FTC 5214 team: leadership, software, hardware, electrical, design, business, outreach, drive team and mentors.', 'team', team, '/team/')
