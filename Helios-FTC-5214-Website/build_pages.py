@@ -297,10 +297,9 @@ track = f'''<section class="track" data-theme="light" data-track aria-labelledby
 season_split = f'''<section class="section seasons-home" data-theme="light"><div class="container">
 {section_head('Seasons', "Every season is a new game. Here’s this one and the last one.", tlink('/seasons/', 'All seasons'))}
 <div class="season-duo">
-<a class="season-big" href="/seasons/biobuzz/" data-hover-img="/assets/meet1-robot-field.webp"><span class="season-big-meta"><span class="serif">This season</span>2026–27</span><span class="season-big-name">Biobuzz</span><span class="season-big-go">{arrow}</span></a>
-<a class="season-big" href="/seasons/decode/" data-hover-img="/assets/meet1-score-118.webp"><span class="season-big-meta"><span class="serif">Last season</span>2025–26 · Innovate Award</span><span class="season-big-name">Decode</span><span class="season-big-go">{arrow}</span></a>
+<a class="season-big" href="/seasons/biobuzz/"><span class="season-big-meta"><span class="serif">This season</span>2026–27</span><span class="season-big-name">Biobuzz</span><span class="season-big-go">{arrow}</span></a>
+<a class="season-big" href="/seasons/decode/"><span class="season-big-meta"><span class="serif">Last season</span>2025–26 · Innovate Award</span><span class="season-big-name">Decode</span><span class="season-big-go">{arrow}</span></a>
 </div></div>
-<div class="hover-img" aria-hidden="true" data-hover-img-el><img alt=""></div>
 </section>'''
 
 # leads first (in team order), then Azaan Raza, then the other members, then mentors
