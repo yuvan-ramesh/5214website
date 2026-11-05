@@ -6,6 +6,7 @@ Robot images: public/assets/robot/ (photo of Eclipse + our Onshape CAD from the 
 """
 from pathlib import Path
 from html import escape
+import json
 import re
 
 P = Path(__file__).parent / 'public'
@@ -135,7 +136,8 @@ def xray(cls='', label='Eclipse, the Helios 2026–27 robot', priority=False, li
 # ---------------------------------------------------------------- layout
 NAV = [('Home', '/', 'home', 'meet1-team-robot.webp'), ('About', '/about/', 'about', 'meet1-team-hands.webp'),
        ('Team', '/team/', 'team', 'meet1-teammates-strategy.webp'), ('Outreach', '/outreach/', 'outreach', 'lakeside-team-workshop.webp'),
-       ('Seasons', '/seasons/', 'seasons', 'meet1-robot-game.webp'), ('Contact', '/contact/', 'contact', 'meet1-robot-workbench.webp')]
+       ('Seasons', '/seasons/', 'seasons', 'meet1-robot-game.webp'), ('Sponsor', '/sponsor/', 'sponsor', 'sponsor-award.webp'),
+       ('Contact', '/contact/', 'contact', 'meet1-robot-workbench.webp')]
 
 
 def header():
@@ -175,7 +177,7 @@ def footer():
 <div class="copy-row"><a class="footer-email" href="mailto:{EMAIL}">{EMAIL}</a><button class="copy-btn" type="button" data-copy="{EMAIL}">{copy_icon}<span>Copy</span></button></div>
 </div>
 <div class="footer-cols">
-<div class="footer-col"><span class="footer-label">Pages</span><a href="/about/">About</a><a href="/team/">Team</a><a href="/outreach/">Outreach</a><a href="/seasons/">Seasons</a><a href="/contact/">Contact</a></div>
+<div class="footer-col"><span class="footer-label">Pages</span><a href="/about/">About</a><a href="/team/">Team</a><a href="/outreach/">Outreach</a><a href="/seasons/">Seasons</a><a href="/sponsor/">Sponsor</a><a href="/contact/">Contact</a></div>
 <div class="footer-col"><span class="footer-label">Follow</span><a href="{INSTAGRAM}"{EXT}>Instagram</a><a href="{TEAM_SOURCE}"{EXT}>FIRST team profile</a><a href="{SCHOOL_URL}"{EXT}>The Quarry Lane School</a></div>
 </div>
 </div>
@@ -463,6 +465,7 @@ contact = f'''<section class="contact-hero" data-theme="light"><div class="conta
 <div class="contact-grid">
 <div class="contact-info">
 <p class="page-lead">Questions about the team, sponsorship or outreach? Email us or send a message with the form.</p>
+<p class="contact-sponsor">Thinking about sponsoring us? {tlink('/sponsor/', 'See our sponsorship tiers')}</p>
 <div class="contact-cards">
 <div class="contact-card contact-card--dark"><span class="contact-label">Email</span><a class="contact-big" href="mailto:{EMAIL}">{EMAIL}</a><button class="copy-btn" type="button" data-copy="{EMAIL}">{copy_icon}<span>Copy</span></button></div>
 <div class="contact-card"><span class="contact-label">Instagram</span><a class="contact-big" href="{INSTAGRAM}"{EXT}>@ftc5214helios</a></div>
@@ -514,5 +517,217 @@ event_page = page_hero('Meet One', 'Our first East Bay League meet of BIOBUZZ. I
 </div></section>
 <div class="container next-wrap"><a class="next-link" href="/seasons/biobuzz/"><span>Back to</span><strong>BIOBUZZ</strong>{arrow}</a></div>'''
 page('East Bay League Meet One', 'Helios FTC 5214 at East Bay League Meet One on November 1, 2026: photos and our 118-point match.', 'seasons', event_page, MEET1)
+
+# ================================================================ SPONSOR
+TIERS = [  # key, name, min, max (None = no cap), label
+    ('core', 'Core', 0, 299, 'Up to $299'),
+    ('radiance', 'Radiance', 300, 499, '$300–$499'),
+    ('plasma', 'Plasma', 500, 999, '$500–$999'),
+    ('flare', 'Flare', 1000, 1999, '$1,000–$1,999'),
+    ('corona', 'Corona', 2000, None, '$2,000+'),
+]
+PERKS = [  # perk, first tier index that gets it
+    ('Sponsor sticker on our robot', 0),
+    ('Your logo on our team hoodie', 1),
+    ('A video made just for you', 2),
+    ('Shoutouts during alliance selection', 3),
+    ('Thanked during our presentations', 3),
+    ('Your own Presenting Sponsor page on our website and all our social media', 4),
+    ('Highlighted in our Team Engineering Portfolio', 4),
+]
+BUDGET = [  # category, dollars, what it pays for
+    ('Event Registration', 1500, 'Entry fees for league meets and tournaments.'),
+    ('Travel', 1000, 'Getting the team and the robot to events.'),
+    ('Robot Electrical', 700, 'Motors, servos, sensors and wiring.'),
+    ('Practice Half Field', 700, 'A half field of our own, so our drivers can practice more. The field we use now has limited access.'),
+    ('Outreach', 500, 'Supplies for outreach, like the filament we use to 3D print IntelliKits.'),
+    ('Tools and Equipment', 500, 'The tools we use to build and fix the robot.'),
+    ('Raw Materials', 500, 'Raw materials for building robot parts.'),
+    ('Robot Mechanical', 300, 'Mechanical robot parts.'),
+    ('Team Apparel', 300, 'Team shirts and hoodies. Radiance sponsors and up get their logo on the hoodie.'),
+]
+BUDGET_TOTAL = sum(b[1] for b in BUDGET)
+BUDGET_COLORS = ['#E0441F', '#EA6328', '#F08532', '#F6A32C', '#F7C04E', '#F3D58A', '#C29A62', '#7E6650', '#33302C']
+TIER_ICONS = {
+    'core': '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="currentColor"/>',
+    'radiance': '<circle cx="12" cy="12" r="4.2" fill="currentColor"/>' + ''.join(
+        f'<path d="M12 {1.8} V{5.2}" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="rotate({a} 12 12)"/>' for a in range(0, 360, 45)),
+    'plasma': ''.join(f'<path d="M3 {y}c2.2-2.6 4.3-2.6 6.5 0s4.3 2.6 6.5 0 3.7-2.2 5-.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>' for y in (7.5, 12.5, 17.5)),
+    'flare': '<path d="M12 2.8c.6 3.2 4.6 5.4 4.6 10.1A4.6 4.6 0 0 1 12 17.5a4.6 4.6 0 0 1-4.6-4.6c0-2 1-3.4 2-4.4.2 1.4.9 2.4 1.9 2.8-.4-3.1.4-6.1.7-8.5Z" fill="currentColor"/><path d="M8.5 20.6h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+    'corona': '<circle cx="12" cy="12" r="5.2" fill="currentColor"/>' + ''.join(
+        f'<path d="M12 {1.6} V{4.4}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" transform="rotate({a} 12 12)"/>' for a in range(0, 360, 30)),
+}
+def tier_icon(key):
+    return f'<svg class="tier-icon" viewBox="0 0 24 24" aria-hidden="true">{TIER_ICONS[key]}</svg>'
+check = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4.5 10.5 3.6 3.6 7.4-8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+lock = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="4.5" y="9" width="11" height="8" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 9V6.8a3 3 0 0 1 6 0V9" stroke="currentColor" stroke-width="1.6"/></svg>'
+download = '<svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v10m-4.5-4.5L10 13l4.5-4.5M4 16.5h12" stroke="currentColor" stroke-width="1.9"/></svg>'
+
+def money(n):
+    return f'${n:,}'
+
+sponsor_data = json.dumps({
+    'tiers': [{'key': k, 'name': n, 'min': lo, 'max': hi, 'label': lab} for k, n, lo, hi, lab in TIERS],
+    'perks': [{'text': t, 'tier': i} for t, i in PERKS],
+    'budget': [{'name': n, 'cost': c} for n, c, _ in BUDGET],
+    'total': BUDGET_TOTAL, 'email': EMAIL,
+}, ensure_ascii=False)
+
+# ---- hero
+sp_hero = f'''<section class="sp-hero" data-theme="dark"><div class="container sp-hero-grid">
+<div class="sp-hero-copy">
+<p class="page-meta">Sponsorship · 2026–27</p>
+<h1 class="page-title" data-split>{split('Sponsor Helios')}</h1>
+<p class="page-lead">We’re trying to make STEM accessible to everyone. It costs about $6,000 to run Helios for a year: robot parts, event fees, tools, travel and the outreach we run for younger kids. Every sponsor helps.</p>
+<div class="sp-hero-actions">{btn('#build', 'Pick your tier', 'sun', attrs=' data-magnetic')}{btn('/assets/helios-sponsorship-package.pdf', 'Download the PDF', 'line', icon=download, attrs=' download data-magnetic')}</div>
+</div>
+<div class="sp-hero-goal" aria-label="$6,000 to run Helios for one year">
+<span class="sp-hero-label">To run Helios for one year</span>
+<strong>$<span data-count="{BUDGET_TOTAL}">{BUDGET_TOTAL:,}</span></strong>
+<div class="sp-hero-tiers" aria-hidden="true">{"".join(f'<span class="tier--{k}">{tier_icon(k)}</span>' for k, *_ in TIERS)}</div>
+</div>
+</div></section>'''
+
+# ---- impact numbers
+impact_stats = [(15, '+', 'teams mentored in the US, Canada, India and Romania'), (500, '+', 'students at our camps and workshops'),
+                (17, '', 'FTC and FLL events hosted'), (3000, '+', 'people reached at outreach events'),
+                (1200, '', 'volunteer hours'), (200, '+', 'IntelliKits given out')]
+impact = f'''<section class="section sp-impact" data-theme="light"><div class="container">
+{section_head('What your money *backs*', 'We’re a FIRST Tech Challenge team from The Quarry Lane School in Dublin. Beyond competing, we run outreach, teach classes and build kits so more kids can get hands-on with engineering.')}
+<dl class="sp-stats">{"".join(f'<div><dt>{d}</dt><dd><span data-count="{n}">{n:,}</span>{s}</dd></div>' for n, s, d in impact_stats)}</dl>
+</div></section>'''
+
+# ---- interactive builder
+presets = [150, 300, 500, 1000, 2000]
+tier_btns = ''.join(f'<button type="button" class="sp-preset" data-amount="{a}">{money(a)}</button>' for a in presets)
+perk_items = ''.join(f'<li class="sp-perk" data-perk-tier="{i}"><span class="sp-perk-mark sp-perk-yes">{check}</span><span class="sp-perk-mark sp-perk-no">{lock}</span><span class="sp-perk-text">{t}</span><span class="sp-perk-unlock">{TIERS[i][4].replace("Up to $299", "Any amount")}</span></li>' for t, i in PERKS)
+track_ticks = ''.join(f'<span class="sp-tick tier--{k}" style="--at:{i / len(TIERS):.4f}"><b>{n}</b><small>{money(lo) if lo else "$50"}</small></span>' for i, (k, n, lo, _, _) in enumerate(TIERS))
+builder = f'''<section class="section sp-build" id="build" data-theme="dark" data-sponsor><div class="container">
+{section_head('Build your *sponsorship*', 'Slide to an amount and see which tier it lands in, what you get, and what it pays for. Each tier includes everything in the tiers below it.')}
+<div class="sp-build-grid">
+<div class="sp-panel sp-amount-panel">
+<label class="sp-amount-label" for="sp-amount">Your gift</label>
+<div class="sp-amount-row"><span class="sp-dollar">$</span><input id="sp-amount" class="sp-amount-input" type="text" inputmode="numeric" value="500" aria-describedby="sp-tier-name" data-sp-input></div>
+<div class="sp-slider-wrap">
+<input class="sp-slider" type="range" min="0" max="100" step="0.1" value="40" aria-label="Sponsorship amount" aria-valuetext="$500" data-sp-slider>
+<div class="sp-ticks" aria-hidden="true">{track_ticks}</div>
+</div>
+<div class="sp-presets" role="group" aria-label="Quick amounts">{tier_btns}</div>
+<div class="sp-cover">
+<div class="sp-cover-top"><span>Share of our $6,000 year</span><strong data-sp-pct>8%</strong></div>
+<div class="sp-cover-bar"><i data-sp-bar></i></div>
+<p class="sp-cover-text" data-sp-covers>Enough to cover our Outreach budget for the year.</p>
+</div>
+</div>
+<div class="sp-panel sp-tier-panel" data-sp-tier="plasma" aria-live="polite">
+<div class="sp-tier-head">
+<span class="sp-tier-badge" data-sp-icon>{tier_icon('plasma')}</span>
+<div><span class="sp-tier-num" data-sp-num>Tier 3</span><h3 class="sp-tier-name" id="sp-tier-name" data-sp-name>Plasma</h3><span class="sp-tier-range" data-sp-range>$500–$999</span></div>
+</div>
+<ul class="sp-perks">{perk_items}</ul>
+<p class="sp-next" data-sp-next>Add $500 to reach Flare: shoutouts during alliance selection.</p>
+<div class="sp-tier-actions">{btn('#sponsor-form', 'Sponsor at this level', 'sun', attrs=' data-sp-go data-magnetic')}<a class="tlink sp-mail" href="mailto:{EMAIL}" data-sp-mail><span>Or email us</span></a></div>
+</div>
+</div>
+</div></section>'''
+
+# ---- tier table
+th = ''.join(f'<th scope="col" class="tier--{k}" data-col="{i}"><button type="button" class="sp-col-btn" data-amount="{max(lo, 150)}">{tier_icon(k)}<span class="sp-col-name">{n}</span><span class="sp-col-num">Tier {i + 1}</span><span class="sp-col-range">{lab}</span></button></th>'
+             for i, (k, n, lo, hi, lab) in enumerate(TIERS))
+rows = ''.join('<tr><th scope="row">' + t + '</th>' + ''.join(
+    f'<td class="tier--{TIERS[j][0]}" data-col="{j}">' + (f'{check}<span class="sr-only">Included</span>' if j >= i else '<span class="sp-dash" aria-hidden="true">–</span><span class="sr-only">Not included</span>') + '</td>'
+    for j in range(len(TIERS))) + '</tr>' for t, i in PERKS)
+tier_table = f'''<section class="section sp-tiers" id="tiers" data-theme="light"><div class="container">
+{section_head('All five *tiers*', 'Named after the parts of the sun. Pick a tier to load it into the builder.')}
+<div class="sp-table-wrap" data-sp-table><table class="sp-table">
+<thead><tr><td class="sp-corner">Each tier includes everything in the tiers below it.</td>{th}</tr></thead>
+<tbody>{rows}</tbody></table></div>
+</div></section>'''
+
+# ---- budget
+seg = ''.join(f'<button type="button" class="sp-seg" style="--w:{c / BUDGET_TOTAL:.4f};--i:{i};--c:{BUDGET_COLORS[i]}" data-seg="{i}" aria-label="{n}, {money(c)}"></button>' for i, (n, c, _) in enumerate(BUDGET))
+legend = ''.join(f'<li><button type="button" class="sp-leg" data-seg="{i}" style="--i:{i};--c:{BUDGET_COLORS[i]}"><span class="sp-leg-dot"></span><span class="sp-leg-name">{n}</span><span class="sp-leg-cost">{money(c)}</span><span class="sp-leg-desc">{d}</span></button></li>' for i, (n, c, d) in enumerate(BUDGET))
+budget = f'''<section class="section sp-budget" data-theme="light"><div class="container">
+{section_head('Where the *$6,000* goes', 'Our estimated costs for one year. Tap a category to see what it pays for.')}
+<div class="sp-budget-card" data-sp-budget>
+<div class="sp-bar" data-reveal-bar>{seg}</div>
+<div class="sp-budget-grid">
+<ul class="sp-legend">{legend}</ul>
+<div class="sp-budget-detail"><span class="sp-detail-label">Selected</span><strong class="sp-detail-name" data-sp-dname>Event Registration</strong><span class="sp-detail-cost" data-sp-dcost>$1,500 · 25% of the year</span><p data-sp-ddesc>{BUDGET[0][2]}</p></div>
+</div>
+<div class="sp-total"><span>Total budget</span><strong>{money(BUDGET_TOTAL)}</strong></div>
+</div>
+</div></section>'''
+
+# ---- record + where we're going
+going = [('Adaptive technology workshops', 'For people with autism and Down syndrome, through FCSN.'),
+         ('e-NABLE prosthetic hands', 'Building 3D printed prosthetic hands with the e-NABLE community.'),
+         ('Starter parts for new teams', 'For new FLL and FTC teams at Title 1 schools in Oakland. We’re already talking with them.'),
+         ('A practice half field', 'So our drivers can train more. The field we use now has limited access.')]
+success = f'''<section class="section sp-success" data-theme="dark"><div class="container">
+<div class="sp-success-grid">
+<div>
+<h2 class="h2" data-split>{split('A top team in our *league*')}</h2>
+<p class="sp-success-text">We’re ranked 2nd in the East Bay League so far this season with a 4-1-0 record. Our awards include the Innovate, Motivate and Judges’ Choice Awards.</p>
+<dl class="sp-record"><div><dt>League rank</dt><dd>2nd</dd></div><div><dt>W-L-T this season</dt><dd>4-1-0</dd></div></dl>
+</div>
+{img_reveal('/assets/sponsor-award.webp', 1000, 803, 'Last season’s robot with the East Bay League Tournament Innovate Award', 'sp-award')}
+</div>
+<div class="sp-going">
+<h3 class="sp-going-title">With your support, here’s what’s next</h3>
+<ol class="sp-going-list">{"".join(f'<li><span class="sp-going-n">{i + 1:02d}</span><strong>{t}</strong><p>{d}</p></li>' for i, (t, d) in enumerate(going))}</ol>
+<figure class="sp-field"><img src="/assets/sponsor-half-field.webp" width="971" height="971" loading="lazy" decoding="async" alt="The BIOBUZZ half field we want to buy: a goal frame, four ball holders, two trays, and 40 yellow, 8 red and 8 blue balls"><figcaption>The half field we’re raising money for</figcaption></figure>
+</div>
+</div></section>'''
+
+# ---- community accordion
+mentored = [('FLL', '65169', 'Terrace Tech Titans'), ('FTC', '14770', 'Control+Q'), ('FTC', '26586', 'Argobots'), ('FTC', '25707', 'Solar Flare'),
+            ('FTC', '18466', 'Mastermindz'), ('FTC', '6134', 'Black Frogs'), ('FTC', '11920', 'RaD'), ('FTC', '19071', 'Smart Cluster')]
+chips = ''.join(f'<li><span>{p} #{num}</span>{nm}</li>' for p, num, nm in mentored)
+community_items = [
+    ('Starting new teams', '<p>Our program founded FTC teams 15034, 23836 and 23808 and FLL teams 64080, 63582, 63583 and 63308, including four all-girls teams. We’ve helped families start three more teams after meeting them at events, and we help Girl Scouts earn three robotics badges.</p>'),
+    ('Mentoring 15+ teams', f'<p>We mentor teams in the US, Canada, India and Romania. Our belted drivetrain advice helped the Argobots double their OPR.</p><ul class="sp-chips">{chips}</ul>'),
+    ('Our school’s FIRST pipeline', '<p>Quarry Lane runs 7 FLL teams and 6 FTC teams that feed into FRC 7419. Students start in FLL, move up to FTC teams like Helios, then lead on 7419, and many come back to mentor the younger teams. We also help run four admissions events a year with live robot demos.</p>'),
+    ('Workshops and events', '<p>Our camps and workshops with IGNITE Pathways in CAD, Java, Python, Scratch and robotics have reached 500+ students, about 50 per camp. We’ve hosted 13 FTC and 4 FLL events in four years, including four East Bay League meets for 30+ teams in 2023. In summer 2023 we taught kids 9 and up Python with Turtle at Dublin Library.</p>'),
+    ('IntelliKits', '<p>IntelliKits are simple engineering kits we put together so kids can build something themselves, especially where programs and equipment are hard to find. We’ve given out 200+ 3D printed physics kits to John Green Elementary School, and we partner with HOPE Solutions to run IntelliKits events for kids facing housing insecurity.</p>'),
+    ('Supporting kids who need it most', '<p>We’ve taught kids at Shepherd’s Gate, a Livermore shelter for women and children, every Tuesday since August 2022, and we run a December food drive for its residents.</p>'),
+    ('Workshops in India', '<p>In summer 2024 we ran a two-day M-Bot workshop at government-funded schools and brought books, shoes, uniforms and stationery. We still meet the same students every two months as they learn Java and Python.</p>'),
+    ('Reaching people online', '<p>Our free educational blog at ignitepathways.org has 150+ posts and 73,000+ views. FTC Bonfire, our free scouting and strategy platform for the FTC community, is used by 1,000+ people on 500+ teams on the web, iOS and Android. 1,150+ students in 100 countries have taken our STEAMBOT course.</p>'),
+    ('Coral cleanup', '<p>With Team 1086 Blue Cheese from Virginia, we turned retired REEFSCAPE field elements into birdhouses for local wildlife and to raise awareness about ocean conservation.</p>'),
+]
+acc = ''.join(f'<details class="sp-acc"{" open" if i == 0 else ""}><summary><span class="sp-acc-n">{i + 1:02d}</span><span class="sp-acc-title">{t}</span><span class="sp-acc-plus" aria-hidden="true"></span></summary><div class="sp-acc-body">{b}</div></details>' for i, (t, b) in enumerate(community_items))
+community = f'''<section class="section sp-community" data-theme="light"><div class="container sp-community-grid">
+<div class="sp-community-head">
+{section_head('Our *community*', 'What sponsors help us keep doing.')}
+{img_reveal('/assets/sponsor-build.webp', 996, 1472, 'Two Helios members working on Eclipse in the pits', 'sp-community-photo', parallax='0.06')}
+</div>
+<div class="sp-accs">{acc}</div>
+</div></section>'''
+
+# ---- form
+tier_pills = ''.join(f'<label class="pill sp-tier-pill tier--{k}"><input type="radio" name="tier" value="{n}"{" checked" if k == "plasma" else ""}><span>{tier_icon(k)}{n}</span></label>' for k, n, *_ in TIERS)
+sp_form = f'''<section class="section sp-contact" id="sponsor-form" data-theme="light"><div class="container sp-contact-grid">
+<div class="sp-contact-copy">
+<h2 class="h2" data-split>{split('Let’s *talk*')}</h2>
+<p class="section-lead">Tell us how you’d like to help. We’ll reply with our thanks and how to send your sponsorship. We appreciate any help, including in-kind support like parts, tools or materials.</p>
+<div class="contact-card contact-card--dark"><span class="contact-label">Email</span><a class="contact-big" href="mailto:{EMAIL}">{EMAIL}</a><button class="copy-btn" type="button" data-copy="{EMAIL}">{copy_icon}<span>Copy</span></button></div>
+</div>
+<form class="contact-form" id="sponsor-inquiry" data-contact-form data-subject="Sponsorship or support" data-sponsor-form novalidate>
+<h3 class="form-title">Sponsorship inquiry</h3>
+<fieldset class="form-field"><legend>Tier</legend><div class="pills">{tier_pills}</div></fieldset>
+<div class="form-row"><div class="form-field"><label for="sp-name">Your name <span>*</span></label><input id="sp-name" name="name" type="text" autocomplete="name" maxlength="120" required></div>
+<div class="form-field"><label for="sp-email">Email <span>*</span></label><input id="sp-email" name="email" type="email" autocomplete="email" maxlength="200" required></div></div>
+<div class="form-row"><div class="form-field"><label for="sp-org">Business or organization</label><input id="sp-org" name="org" type="text" autocomplete="organization" maxlength="160"></div>
+<div class="form-field"><label for="sp-amt">Amount (USD)</label><input id="sp-amt" name="amount" type="text" inputmode="numeric" maxlength="12" value="500" data-sp-form-amount></div></div>
+<div class="form-field"><label for="sp-message">Message <span>*</span></label><textarea id="sp-message" name="message" rows="5" minlength="10" maxlength="4500" required placeholder="Anything we should know, like in-kind support or how you heard about us."></textarea></div>
+<div class="hidden-field" aria-hidden="true"><label for="sp-company">Company website (leave blank)</label><input id="sp-company" name="company" type="text" tabindex="-1" autocomplete="off"></div>
+<div class="form-feedback" aria-live="polite" role="status" data-form-feedback></div>
+<button class="btn btn--sun submit-button" type="submit"><span class="btn-label"><span class="submit-label">Send inquiry</span><span aria-hidden="true">Send inquiry</span></span><span class="btn-icon">{arrow}</span></button>
+</form>
+</div></section>'''
+
+sponsor = sp_hero + impact + builder + tier_table + budget + success + community + sp_form + f'<script type="application/json" id="sponsor-data">{sponsor_data}</script>'
+page('Sponsor', 'Sponsor Helios FTC 5214. It costs about $6,000 to run the team for a year. See our five sponsorship tiers, what each one includes and where the money goes.', 'sponsor', sponsor, '/sponsor/')
+
 
 print('Generated', len(list(P.rglob('index.html'))), 'pages')

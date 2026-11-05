@@ -9,6 +9,7 @@ A multi-page team website for GitHub + Vercel, built with plain HTML, CSS and Ja
 - `/team/` 2026–27 team by group, with portrait placeholders
 - `/outreach/` October 16, 2026 IntelliKits event at Lakeside Apartments in Concord
 - `/contact/` Email, Instagram and the contact form
+- `/sponsor/` Sponsorship: interactive tier builder, tier table, budget breakdown, community work and a sponsorship inquiry form. The PDF version is at `/assets/helios-sponsorship-package.pdf`
 - `/seasons/` This season, last season, and links to official FIRST results for earlier seasons
 - `/seasons/biobuzz/` 2026–27 BIOBUZZ with the Eclipse robot viewer and events
 - `/seasons/biobuzz/east-bay-meet-one/` November 1, 2026 recap with scores and nine photos

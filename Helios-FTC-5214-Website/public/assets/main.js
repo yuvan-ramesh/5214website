@@ -215,7 +215,7 @@
       const dur = 1600;
       const step = (now) => {
         const t = clamp((now - start) / dur, 0, 1);
-        el.textContent = Math.round(target * (1 - Math.pow(1 - t, 4)));
+        el.textContent = Math.round(target * (1 - Math.pow(1 - t, 4))).toLocaleString('en-US');
         if (t < 1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
@@ -627,33 +627,150 @@
     });
   }
 
-  /* ------------------------------------------------------------ contact form */
-  const form = document.getElementById('contact-form');
-  if (!form) return;
-  const feedback = document.getElementById('form-feedback');
-  const submitButton = form.querySelector('button[type="submit"]');
-  const submitLabels = submitButton.querySelectorAll('.btn-label > span');
-  const setLabel = (t) => submitLabels.forEach((s) => { s.textContent = t; });
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    feedback.textContent = '';
-    feedback.className = 'form-feedback';
-    if (!form.reportValidity()) return;
-    const payload = Object.fromEntries(new FormData(form).entries());
-    submitButton.disabled = true;
-    setLabel('Sending…');
-    try {
-      const response = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || `Your message didn’t send. Email us at ${'5214.helios@gmail.com'} instead.`);
-      feedback.classList.add('success');
-      feedback.textContent = 'Sent. Thanks for writing to us.';
-      form.reset();
-    } catch (error) {
-      feedback.textContent = error.message || 'Your message didn’t send. Email us at 5214.helios@gmail.com instead.';
-    } finally {
-      submitButton.disabled = false;
-      setLabel('Send message');
+  /* ------------------------------------------------------------ sponsor page */
+  const spData = document.getElementById('sponsor-data');
+  const spRoot = document.querySelector('[data-sponsor]');
+  if (spData && spRoot) {
+    const D = JSON.parse(spData.textContent);
+    const $ = (sel, r = spRoot) => r.querySelector(sel);
+    const slider = $('[data-sp-slider]'), input = $('[data-sp-input]'), panel = $('[data-sp-tier]');
+    const perks = [...spRoot.querySelectorAll('[data-perk-tier]')];
+    const sform = document.querySelector('[data-sponsor-form]');
+    const table = document.querySelector('[data-sp-table]');
+    const icons = {};
+    document.querySelectorAll('.sp-hero-tiers > span').forEach((s) => { icons[s.className.replace('tier--', '')] = s.innerHTML; });
+    const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
+    const tierOf = (a) => D.tiers.reduce((k, t, i) => (a >= t.min ? i : k), 0);
+    const listText = (arr) => arr.length < 2 ? arr.join('') : `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`;
+    let amount = 500, lastTier = -1;
+    const covers = (a) => {
+      if (a >= D.total) return 'That covers everything it costs to run Helios for a year.';
+      const fits = D.budget.filter((b) => b.cost <= a);
+      if (!fits.length) return `That’s ${Math.round((a / D.budget[D.budget.length - 1].cost) * 100)}% of our robot mechanical parts budget.`;
+      const best = Math.max(...fits.map((b) => b.cost));
+      const pick = fits.find((b) => b.cost === best && b.name === 'Practice Half Field') || fits.find((b) => b.cost === best);
+      return `Enough to cover our whole ${pick.name.toLowerCase()} budget for the year (${fmt(pick.cost)}).`;
+    };
+    // the slider gives each tier an equal slice: $50–300, 300–500, 500–1,000, 1,000–2,000, 2,000–3,000
+    const B = [50, 300, 500, 1000, 2000, 3000];
+    const toAmount = (pos) => { const k = Math.min(4, Math.floor(pos / 20)); const v = B[k] + ((pos - k * 20) / 20) * (B[k + 1] - B[k]); const st = v < 500 ? 25 : v < 2000 ? 50 : 100; return Math.round(v / st) * st; };
+    const toPos = (a) => { const v = clamp(a, 50, 3000); let k = 0; while (k < 4 && v >= B[k + 1]) k++; return Math.min(100, k * 20 + ((v - B[k]) / (B[k + 1] - B[k])) * 20); };
+    const update = (a, from) => {
+      amount = clamp(Math.round(Number(a) || 0), 0, 1000000);
+      const i = tierOf(amount), t = D.tiers[i];
+      if (from !== 'slider') slider.value = toPos(amount);
+      slider.setAttribute('aria-valuetext', fmt(amount));
+      if (from !== 'input') input.value = amount.toLocaleString('en-US');
+      slider.style.setProperty('--fill', `${toPos(amount).toFixed(2)}%`);
+      spRoot.dataset.tier = t.key; panel.dataset.spTier = t.key;
+      if (i !== lastTier) {
+        $('[data-sp-name]').textContent = t.name;
+        $('[data-sp-num]').textContent = `Tier ${i + 1}`;
+        $('[data-sp-range]').textContent = t.label;
+        $('[data-sp-icon]').innerHTML = icons[t.key] || '';
+        panel.classList.remove('is-bump'); void panel.offsetWidth; panel.classList.add('is-bump');
+        lastTier = i;
+      }
+      perks.forEach((li) => li.classList.toggle('is-on', Number(li.dataset.perkTier) <= i));
+      const next = D.tiers[i + 1];
+      $('[data-sp-next]').textContent = next
+        ? `Add ${fmt(next.min - amount)} to reach ${next.name}: ${listText(D.perks.filter((p) => p.tier === i + 1).map((p) => p.text.charAt(0).toLowerCase() + p.text.slice(1)))}.`
+        : 'That’s our top tier. You get every perk on the list.';
+      const pct = amount / D.total;
+      $('[data-sp-pct]').textContent = pct > 0 && pct < 0.01 ? '<1%' : `${Math.round(pct * 100)}%`;
+      $('[data-sp-bar]').style.transform = `scaleX(${Math.min(pct, 1).toFixed(4)})`;
+      $('[data-sp-covers]').textContent = covers(amount);
+      const subject = `Sponsoring Helios: ${t.name} tier`;
+      const body = `Hi Helios,\n\nWe’d like to sponsor the team at the ${t.name} tier (${fmt(amount)}).\n\nName:\nOrganization:\n\nThanks!`;
+      $('[data-sp-mail]').href = `mailto:${D.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      if (sform) {
+        const r = sform.querySelector(`input[name="tier"][value="${t.name}"]`); if (r) r.checked = true;
+        const fa = sform.querySelector('[data-sp-form-amount]'); if (fa && from !== 'form') fa.value = amount.toLocaleString('en-US');
+      }
+      if (table) table.dataset.sel = i;
+    };
+    const goTo = (sel) => { const el = document.querySelector(sel); if (!el) return; if (lenis) lenis.scrollTo(el, { offset: -90 }); else el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
+    slider.addEventListener('input', () => update(toAmount(Number(slider.value)), 'slider'));
+    input.addEventListener('input', () => update(input.value.replace(/[^\d]/g, ''), 'input'));
+    input.addEventListener('blur', () => { input.value = amount.toLocaleString('en-US'); });
+    spRoot.querySelectorAll('.sp-preset').forEach((b) => b.addEventListener('click', () => update(b.dataset.amount)));
+    document.querySelectorAll('.sp-col-btn').forEach((b) => b.addEventListener('click', () => { update(b.dataset.amount); goTo('#build'); }));
+    if (sform) {
+      sform.querySelectorAll('input[name="tier"]').forEach((r) => r.addEventListener('change', () => {
+        const t = D.tiers.find((x) => x.name === r.value); if (t && tierOf(amount) !== D.tiers.indexOf(t)) update(Math.max(t.min, 150));
+      }));
+      const fa = sform.querySelector('[data-sp-form-amount]');
+      if (fa) fa.addEventListener('change', () => { const v = fa.value.replace(/[^\d]/g, ''); if (v) update(v, 'form'); });
     }
+    if (table) table.querySelectorAll('[data-col]').forEach((c) => {
+      c.addEventListener('pointerenter', () => { table.dataset.hover = c.dataset.col; });
+      c.addEventListener('pointerleave', () => { delete table.dataset.hover; });
+    });
+    update(500);
+
+    // budget
+    const bud = document.querySelector('[data-sp-budget]');
+    if (bud) {
+      const segs = [...bud.querySelectorAll('[data-seg]')];
+      const descs = [...bud.querySelectorAll('.sp-leg-desc')].map((d) => d.textContent);
+      const pick = (i) => {
+        segs.forEach((s) => s.classList.toggle('is-active', Number(s.dataset.seg) === i));
+        bud.dataset.active = i;
+        const b = D.budget[i];
+        bud.querySelector('[data-sp-dname]').textContent = b.name;
+        bud.querySelector('[data-sp-dcost]').textContent = `${fmt(b.cost)} · ${Math.round(b.cost / D.total * 100)}% of the year`;
+        bud.querySelector('[data-sp-ddesc]').textContent = descs[i];
+      };
+      segs.forEach((s) => {
+        const i = Number(s.dataset.seg);
+        s.addEventListener('click', () => pick(i));
+        s.addEventListener('focus', () => pick(i));
+        if (finePointer) s.addEventListener('pointerenter', () => pick(i));
+      });
+      pick(0);
+      const bar = bud.querySelector('[data-reveal-bar]');
+      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { bar.classList.add('is-in'); io.disconnect(); } }), { threshold: 0.4 });
+      io.observe(bar);
+    }
+  }
+
+  /* ------------------------------------------------------------ contact forms */
+  document.querySelectorAll('#contact-form, [data-contact-form]').forEach((form) => {
+    const feedback = form.querySelector('[data-form-feedback]') || document.getElementById('form-feedback');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const submitLabels = submitButton.querySelectorAll('.btn-label > span');
+    const idle = submitLabels[0] ? submitLabels[0].textContent : 'Send message';
+    const setLabel = (t) => submitLabels.forEach((s) => { s.textContent = t; });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      feedback.textContent = '';
+      feedback.className = 'form-feedback';
+      if (!form.reportValidity()) return;
+      const data = Object.fromEntries(new FormData(form).entries());
+      let payload = data;
+      if (form.dataset.subject) {
+        const lines = [];
+        if (data.tier) lines.push(`Tier: ${data.tier}`);
+        if (data.amount) lines.push(`Amount: $${String(data.amount).replace(/[^\d.,]/g, '')}`);
+        if (data.org) lines.push(`Organization: ${data.org}`);
+        payload = { name: data.name, email: data.email, company: data.company, subject: form.dataset.subject, message: `${lines.join('\n')}${lines.length ? '\n\n' : ''}${data.message}` };
+      }
+      submitButton.disabled = true;
+      setLabel('Sending…');
+      try {
+        const response = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Your message didn’t send. Email us at 5214.helios@gmail.com instead.');
+        feedback.classList.add('success');
+        feedback.textContent = form.dataset.subject ? 'Sent. Thank you, we’ll get back to you soon.' : 'Sent. Thanks for writing to us.';
+        form.querySelectorAll('input[type="text"]:not([name="amount"]), input[type="email"], textarea').forEach((f) => { f.value = ''; });
+        if (!form.dataset.subject) form.reset();
+      } catch (error) {
+        feedback.textContent = error.message || 'Your message didn’t send. Email us at 5214.helios@gmail.com instead.';
+      } finally {
+        submitButton.disabled = false;
+        setLabel(idle);
+      }
+    });
   });
 })();
