@@ -136,14 +136,14 @@ def xray(cls='', label='Eclipse, the Helios 2026–27 robot', priority=False, li
 # ---------------------------------------------------------------- layout
 NAV = [('Home', '/', 'home', 'meet1-team-robot.webp'), ('About', '/about/', 'about', 'meet1-team-hands.webp'),
        ('Team', '/team/', 'team', 'meet1-teammates-strategy.webp'), ('Outreach', '/outreach/', 'outreach', 'lakeside-team-workshop.webp'),
-       ('Seasons', '/seasons/', 'seasons', 'meet1-robot-game.webp'), ('Sponsor', '/sponsor/', 'sponsor', 'sponsor-award.webp'),
+       ('Seasons', '/seasons/', 'seasons', 'meet1-robot-game.webp'), ('Sponsor', '/sponsor/', 'sponsor', 'meet1-robot-field.webp'),
        ('Contact', '/contact/', 'contact', 'meet1-robot-workbench.webp')]
 
 
 def header():
     return f'''<header class="site-header" data-header>
 <a href="/" class="site-logo" aria-label="Helios, FTC Team 5214, home">{LOGO}</a>
-<div class="header-actions">{btn('/contact/', 'Contact', 'sun', attrs=' data-magnetic')}
+<div class="header-actions">{btn('/sponsor/', 'Sponsor us', 'line header-sponsor', attrs=' data-magnetic')}{btn('/contact/', 'Contact', 'sun', attrs=' data-magnetic')}
 <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" data-menu-btn><span class="menu-btn-lines" aria-hidden="true"><i></i><i></i></span><span class="sr-only">Menu</span></button></div>
 </header>'''
 
@@ -660,10 +660,9 @@ budget = f'''<section class="section sp-budget" data-theme="light"><div class="c
 </div></section>'''
 
 # ---- record + where we're going
-going = [('Adaptive technology workshops', 'For people with autism and Down syndrome, through FCSN.'),
-         ('e-NABLE prosthetic hands', 'Building 3D printed prosthetic hands with the e-NABLE community.'),
-         ('Starter parts for new teams', 'For new FLL and FTC teams at Title 1 schools in Oakland. We’re already talking with them.'),
-         ('A practice half field', 'So our drivers can train more. The field we use now has limited access.')]
+next_up = [('Adaptive technology workshops', 'For people with autism and Down syndrome, run through FCSN.'),
+           ('<span class="nw">e-NABLE</span> prosthetic hands', '3D printed prosthetic hands, made with the <span class="nw">e-NABLE</span> community.'),
+           ('Starter parts for new teams', 'For new FLL and FTC teams at Title 1 schools in Oakland. We’re already talking with them.')]
 success = f'''<section class="section sp-success" data-theme="dark"><div class="container">
 <div class="sp-success-grid">
 <div>
@@ -671,12 +670,23 @@ success = f'''<section class="section sp-success" data-theme="dark"><div class="
 <p class="sp-success-text">We’re ranked 2nd in the East Bay League so far this season with a 4-1-0 record. Our awards include the Innovate, Motivate and Judges’ Choice Awards.</p>
 <dl class="sp-record"><div><dt>League rank</dt><dd>2nd</dd></div><div><dt>W-L-T this season</dt><dd>4-1-0</dd></div></dl>
 </div>
-{img_reveal('/assets/sponsor-award.webp', 1000, 803, 'Last season’s robot with the East Bay League Tournament Innovate Award', 'sp-award')}
+{img_reveal('/assets/meet1-robot-field.webp', 1120, 1680, 'Eclipse, our 2026–27 robot, on the field at East Bay League Meet One', 'sp-award')}
 </div>
-<div class="sp-going">
-<h3 class="sp-going-title">With your support, here’s what’s next</h3>
-<ol class="sp-going-list">{"".join(f'<li><span class="sp-going-n">{i + 1:02d}</span><strong>{t}</strong><p>{d}</p></li>' for i, (t, d) in enumerate(going))}</ol>
-<figure class="sp-field"><img src="/assets/sponsor-half-field.webp" width="971" height="971" loading="lazy" decoding="async" alt="The BIOBUZZ half field we want to buy: a goal frame, four ball holders, two trays, and 40 yellow, 8 red and 8 blue balls"><figcaption>The half field we’re raising money for</figcaption></figure>
+<div class="sp-raise">
+<div class="sp-raise-copy">
+<p class="sp-raise-kicker">Raising money for</p>
+<h3 class="sp-raise-title">A practice half field</h3>
+<p>The field we practice on now has limited access, so our drivers don’t get much time on it. A half field of our own means they can practice every time we meet.</p>
+<dl class="sp-raise-facts"><div><dt>In our budget</dt><dd>$700</dd></div><div><dt>In the kit</dt><dd>The goal, 4 ball holders, 2 trays and 56 balls</dd></div></dl>
+</div>
+<div class="sp-raise-imgs">
+<figure class="sp-raise-img sp-raise-img--kit"><img src="/assets/sponsor-half-field.webp" width="971" height="971" loading="lazy" decoding="async" alt="The BIOBUZZ half field kit: the goal, four ball holders, two trays, and 40 yellow, 8 red and 8 blue balls"><figcaption>What’s in the kit</figcaption></figure>
+<figure class="sp-raise-img"><img src="/assets/meet1-robot-game.webp" width="1680" height="1120" loading="lazy" decoding="async" alt="Eclipse next to the ball holders and goal on the field at Meet One"><figcaption>The same pieces on the field at Meet One</figcaption></figure>
+</div>
+</div>
+<div class="sp-next-up">
+<h3 class="sp-next-title">Next for our outreach</h3>
+<ul class="sp-next-list">{"".join(f'<li><strong>{t}</strong><p>{d}</p></li>' for t, d in next_up)}</ul>
 </div>
 </div></section>'''
 
